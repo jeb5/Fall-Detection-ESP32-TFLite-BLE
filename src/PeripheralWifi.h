@@ -1,12 +1,13 @@
 #ifndef PeripheralWifi_H
 #define PeripheralWifi_H
-#include <ESP8266WiFi.h>
+// #include <ESP8266WiFi.h>
+#include <WiFi.h>
 
-extern "C" {
-#include "c_types.h"
-#include "user_interface.h"
-#include "wpa2_enterprise.h"
-}
+// extern "C" {
+// #include "c_types.h"
+// #include "user_interface.h"
+// #include "wpa2_enterprise.h"
+// }
 
 class PeripheralWifiClass {
  public:
@@ -21,6 +22,5 @@ extern char ssid[];
 extern char identity[];
 extern char username[];
 extern char password[];
-extern uint8_t target_esp_mac[6];
 
 #endif

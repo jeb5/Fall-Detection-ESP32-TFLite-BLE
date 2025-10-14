@@ -5,3 +5,10 @@
 .vscode/ipch
 .vscode
 **/env.cpp
+**/*.cc
+**/*.tflite
+**/*.h5
+**/.dataset_cache
+**/*.mov
+**/*.keras
+**/*.csv
