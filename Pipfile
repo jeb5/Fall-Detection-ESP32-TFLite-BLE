@@ -11,6 +11,7 @@ pandas = "*"
 numpy = "*"
 matplotlib = "*"
 scikit-learn = "*"
+fastapi = {extras = ["standard"], version = "*"}
 
 [dev-packages]
 

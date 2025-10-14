@@ -19,8 +19,8 @@ char server_host[] = "10.112.150.112";
 int server_port = 8000;
 char server_message[] = "POST /i_have_fallen HTTP/1.0";
 
-int state_window[64] = {};
-float data_window[64 * 8] = {};
+// int state_window[64] = {};
+float data_window[8 * 64 * 8] = {};
 int windex = 0;
 int frames_since_fall = 100;
 unsigned long previousMillis = 0;
@@ -107,96 +107,98 @@ void loop() {
 	float gyro_x = gyroData.gyroX;
 	float gyro_y = gyroData.gyroY;
 	float gyro_z = gyroData.gyroZ;
-	float acc_mag = sqrtf(pow(acc_x, 2) + pow(acc_y, 2) + pow(acc_z, 2));
+	// float acc_mag = sqrtf(pow(acc_x, 2) + pow(acc_y, 2) + pow(acc_z, 2));
 
-	int weightless = acc_mag < 0.6;
-	int peak = acc_mag > 2.0;
-	int stable = acc_mag > 0.7 && acc_mag < 1.3;
+	// Serial.println("gibgfi");
 
-	if (weightless) {
-		state_window[windex] = 1;
-	} else if (peak) {
-		state_window[windex] = 2;
-	} else if (stable) {
-		state_window[windex] = 3;
-	} else {
-		state_window[windex] = 0;
-	}
+	// int weightless = acc_mag < 0.6;
+	// int peak = acc_mag > 2.0;
+	// int stable = acc_mag > 0.7 && acc_mag < 1.3;
 
-	int fallen = 0;
-	if (frames_since_fall < 50) {
-		frames_since_fall++;
-		fallen = 1;
-	} else {
-		for (int j = 0; j < 1; j++) {
-			int windex_t = windex;
-			int stables_remaining = 4;
-			for (int i = 0; i < 4; i++) {
-				if (state_window[windex_t] == 3)
-					stables_remaining--;
-				else
-					stables_remaining = 4;
-				windex_t = (windex_t - 1 + 64) % 64;
-				if (stables_remaining <= 0) break;
-			}
-			if (stables_remaining > 0) break;
+	// if (weightless) {
+	// 	state_window[windex] = 1;
+	// } else if (peak) {
+	// 	state_window[windex] = 2;
+	// } else if (stable) {
+	// 	state_window[windex] = 3;
+	// } else {
+	// 	state_window[windex] = 0;
+	// }
 
-			int peaks_remaining = 1;
-			for (int i = 0; i < 9 + 1; i++) {
-				if (state_window[windex_t] == 2)
-					peaks_remaining--;
-				else
-					peaks_remaining = 1;
-				windex_t = (windex_t - 1 + 64) % 64;
-				if (peaks_remaining <= 0) break;
-			}
-			if (peaks_remaining > 0) break;
+	// int fallen = 0;
+	// if (frames_since_fall < 50) {
+	// 	frames_since_fall++;
+	// 	fallen = 1;
+	// } else {
+	// 	for (int j = 0; j < 1; j++) {
+	// 		int windex_t = windex;
+	// 		int stables_remaining = 4;
+	// 		for (int i = 0; i < 4; i++) {
+	// 			if (state_window[windex_t] == 3)
+	// 				stables_remaining--;
+	// 			else
+	// 				stables_remaining = 4;
+	// 			windex_t = (windex_t - 1 + 64) % 64;
+	// 			if (stables_remaining <= 0) break;
+	// 		}
+	// 		if (stables_remaining > 0) break;
 
-			int weightless_remaining = 3;
-			for (int i = 0; i < 5 + 3; i++) {
-				if (state_window[windex_t] == 1)
-					weightless_remaining--;
-				else
-					weightless_remaining = 3;
-				windex_t = (windex_t - 1 + 64) % 64;
-				if (weightless_remaining <= 0) break;
-			}
-			if (weightless_remaining > 0) break;
-			fallen = 1;
-			frames_since_fall = 0;
-		}
-	}
+	// 		int peaks_remaining = 1;
+	// 		for (int i = 0; i < 9 + 1; i++) {
+	// 			if (state_window[windex_t] == 2)
+	// 				peaks_remaining--;
+	// 			else
+	// 				peaks_remaining = 1;
+	// 			windex_t = (windex_t - 1 + 64) % 64;
+	// 			if (peaks_remaining <= 0) break;
+	// 		}
+	// 		if (peaks_remaining > 0) break;
 
-	if (frames_since_fall == 0) {
-		Serial.println("Fall detected!");
-		// if (PeripheralWifi.isConnected() and client.connect(server_host, server_port)) {
-		// 	Serial.println(server_message);
-		// 	client.println(server_message);
-		// 	client.println();
-		// 	Serial.println("Sent fall message to server");
-		// } else {
-		// 	Serial.println("Connection to server failed");
-		// }
-	}
-	if (fallen == 1) {
-		int odd = frames_since_fall & 1;
-		// digitalWrite(LED_BUILTIN, odd ? LOW : HIGH);
-	}
+	// 		int weightless_remaining = 3;
+	// 		for (int i = 0; i < 5 + 3; i++) {
+	// 			if (state_window[windex_t] == 1)
+	// 				weightless_remaining--;
+	// 			else
+	// 				weightless_remaining = 3;
+	// 			windex_t = (windex_t - 1 + 64) % 64;
+	// 			if (weightless_remaining <= 0) break;
+	// 		}
+	// 		if (weightless_remaining > 0) break;
+	// 		fallen = 1;
+	// 		frames_since_fall = 0;
+	// 	}
+	// }
 
-	windex = (windex + 1) % 64;
+	// if (frames_since_fall == 0) {
+	// 	Serial.println("Fall detected!");
+	// 	// if (PeripheralWifi.isConnected() and client.connect(server_host, server_port)) {
+	// 	// 	Serial.println(server_message);
+	// 	// 	client.println(server_message);
+	// 	// 	client.println();
+	// 	// 	Serial.println("Sent fall message to server");
+	// 	// } else {
+	// 	// 	Serial.println("Connection to server failed");
+	// 	// }
+	// }
+	// if (fallen == 1) {
+	// 	int odd = frames_since_fall & 1;
+	// 	// digitalWrite(LED_BUILTIN, odd ? LOW : HIGH);
+	// }
+
+	windex = (windex + 1) % (8 * 64);
 
 	// digitalWrite(0, PeripheralWifi.isConnected() ? HIGH : LOW);
 
 	int button_value = digitalRead(GPIO_BUTTON) == HIGH ? 0 : 1;
 
-	if (log_metrics) {
+	if (log_metrics == 1) {
 		Serial.print(">time_ms:");
 		Serial.println(currentMillis);
 		Serial.print(">button:");
 		Serial.println(button_value);
 
-		Serial.print(">acc_mag:");
-		Serial.println(acc_mag);
+		// Serial.print(">acc_mag:");
+		// Serial.println(acc_mag);
 
 		Serial.print(">acc_x:");
 		Serial.println(acc_x);
@@ -205,13 +207,13 @@ void loop() {
 		Serial.print(">acc_z:");
 		Serial.println(acc_z);
 
-		Serial.println(">weightless:" + String(weightless));
-		Serial.println(">peak:" + String(peak));
-		Serial.println(">stable:" + String(stable));
-		Serial.println(">fallen:" + String(fallen));
+		// Serial.println(">weightless:" + String(weightless));
+		// Serial.println(">peak:" + String(peak));
+		// Serial.println(">stable:" + String(stable));
+		// Serial.println(">fallen:" + String(fallen));
 	}
 
-	if (windex == 0) {
+	if (windex % (64 * 4) == 0) {
 		Serial.println("-----");
 		if (PeripheralWifi.isConnected() and client.connect(server_host, server_port)) {
 			// Send entire contents of data_window in HTTP POST request
@@ -234,18 +236,18 @@ void loop() {
 		}
 	}
 
-	data_window[windex + (0 * 64)] = *((float*)(&currentMillis));
-	data_window[windex + (1 * 64)] = *((float*)(&button_value));
-	data_window[windex + (2 * 64)] = acc_x;
-	data_window[windex + (3 * 64)] = acc_y;
-	data_window[windex + (4 * 64)] = acc_z;
-	data_window[windex + (5 * 64)] = gyro_x;
-	data_window[windex + (6 * 64)] = gyro_y;
-	data_window[windex + (7 * 64)] = gyro_z;
+	data_window[windex + (0 * 64 * 8)] = *((float*)(&currentMillis));
+	data_window[windex + (1 * 64 * 8)] = *((float*)(&button_value));
+	data_window[windex + (2 * 64 * 8)] = acc_x;
+	data_window[windex + (3 * 64 * 8)] = acc_y;
+	data_window[windex + (4 * 64 * 8)] = acc_z;
+	data_window[windex + (5 * 64 * 8)] = gyro_x;
+	data_window[windex + (6 * 64 * 8)] = gyro_y;
+	data_window[windex + (7 * 64 * 8)] = gyro_z;
 
-	for (int i = 0; i < 64 * 6; i++) {
-		input->data.f[i] = data_window[i + (2 * 64)];
-	}
+	// for (int i = 0; i < 64 * 6; i++) {
+	// 	input->data.f[i] = data_window[i + (2 * 64 * 4)];
+	// }
 
 	// // Run inference, and report any error
 	// TfLiteStatus invoke_status = interpreter->Invoke();

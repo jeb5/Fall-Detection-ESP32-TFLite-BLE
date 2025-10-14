@@ -35,10 +35,10 @@ class VideoScrubber(QtWidgets.QWidget):
         self.play_btn.setCheckable(True)
         self.play_btn.clicked.connect(self.toggle_play)
 
-        self.back_btn = QtWidgets.QPushButton("-10s")
-        self.back_btn.clicked.connect(lambda: self.skip_time(-10))
-        self.fwd_btn = QtWidgets.QPushButton("+10s")
-        self.fwd_btn.clicked.connect(lambda: self.skip_time(10))
+        self.back_btn = QtWidgets.QPushButton("-5s")
+        self.back_btn.clicked.connect(lambda: self.skip_time(-5))
+        self.fwd_btn = QtWidgets.QPushButton("+5s")
+        self.fwd_btn.clicked.connect(lambda: self.skip_time(5))
 
         self.slider = QtWidgets.QSlider(QtCore.Qt.Horizontal)
         self.slider.setMinimum(0)

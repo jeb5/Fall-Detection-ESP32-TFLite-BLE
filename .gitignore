@@ -9,6 +9,8 @@
 **/*.tflite
 **/*.h5
 **/.dataset_cache
+**/.data_cache
 **/*.mov
 **/*.keras
 **/*.csv
+.DS_Store
