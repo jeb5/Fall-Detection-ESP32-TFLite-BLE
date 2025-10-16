@@ -12,6 +12,7 @@ numpy = "*"
 matplotlib = "*"
 scikit-learn = "*"
 fastapi = {extras = ["standard"], version = "*"}
+ahrs = "*"
 
 [dev-packages]
 
