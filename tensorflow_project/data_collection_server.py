@@ -141,21 +141,21 @@ def main():
   plt.show()
 
 
-@app.post("/i_have_fallen")
-async def fallen():
-  print("Fallen!")
-  # for i in range(25):
-  #   for pin in pins:
-  #     GPIO.output(pin,GPIO.HIGH)
-  #   await asyncio.sleep(0.2)
-  #   for pin in pins:
-  #     GPIO.output(pin,GPIO.LOW)
-  #   await asyncio.sleep(0.2)
-  return "Okay"
+# @app.post("/i_have_fallen")
+# async def fallen():
+#   print("Fallen!")
+#   for i in range(25):
+#     for pin in pins:
+#       GPIO.output(pin,GPIO.HIGH)
+#     await asyncio.sleep(0.2)
+#     for pin in pins:
+#       GPIO.output(pin,GPIO.LOW)
+#     await asyncio.sleep(0.2)
+#   return "Okay"
 
 data = {
     'time': [],
-    # 'button': [],
+    'button': [],
     'acc_x': [],
     'acc_y': [],
     'acc_z': [],
@@ -165,8 +165,7 @@ data = {
 }
 times = set()
 
-# names = ['time', 'button', 'acc_x', 'acc_y', 'acc_z', 'gyro_x', 'gyro_y', 'gyro_z']
-names = ['time', 'acc_x', 'acc_y', 'acc_z', 'gyro_x', 'gyro_y', 'gyro_z']
+names = ['time', 'button', 'acc_x', 'acc_y', 'acc_z', 'gyro_x', 'gyro_y', 'gyro_z']
 
 @app.post("/log_data")
 async def process_data(request:Request):
@@ -174,29 +173,28 @@ async def process_data(request:Request):
   input_data = await request.body()
   floats = np.frombuffer(input_data, dtype=np.float32)
   ints = np.frombuffer(input_data, dtype=np.int32)
-  floats = floats.reshape(7,96)
-  # ints = ints.reshape(7,96)
-  for i in range(96):
+  floats = floats.reshape(8,64*8)
+  ints = ints.reshape(8,64*8)
+  for i in range(64*8):
     
-    values = [floats[0,i], floats[1,i], floats[2,i], floats[3,i], floats[4,i], floats[5,i], floats[6,i]]
-    print(values)
+    values = [ints[0,i], ints[1,i], floats[2,i], floats[3,i], floats[4,i], floats[5,i], floats[6,i], floats[7,i]]
 
-  #   time_ms = values[0]
-  #   if time_ms in times:
-  #     continue
-  #   times.add(time_ms)
+    time_ms = values[0]
+    if time_ms in times:
+      continue
+    times.add(time_ms)
 
-  #   # get index of time_ms in data['time']
-  #   idx = bisect.bisect(data['time'], time_ms)
-  #   for key, value in zip(names, values):
-  #       data[key].insert(idx, value)
+    # get index of time_ms in data['time']
+    idx = bisect.bisect(data['time'], time_ms)
+    for key, value in zip(names, values):
+        data[key].insert(idx, value)
 
-  # with open("data.csv", "w") as f:
-  #   f.write(",".join(names) + "\n")
-  #   for i in range(len(data['time'])):
-  #       f.write(",".join(str(data[key][i]) for key in names) + "\n")
-  # elapsed = (time.perf_counter() - start_time) * 1000
-  # print(f"Time taken: {elapsed:.2f} ms")
+  with open("data.csv", "w") as f:
+    f.write(",".join(names) + "\n")
+    for i in range(len(data['time'])):
+        f.write(",".join(str(data[key][i]) for key in names) + "\n")
+  elapsed = (time.perf_counter() - start_time) * 1000
+  print(f"Time taken: {elapsed:.2f} ms")
   return {"message":"Processed"}
 
 main()
