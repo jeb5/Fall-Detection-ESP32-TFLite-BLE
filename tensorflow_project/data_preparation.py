@@ -3,7 +3,7 @@ import tensorflow as tf
 import random
 from sklearn.model_selection import train_test_split
 import math
-from ahrs.filters import Madgwick
+
 
 DATA_CSV = "data_sorted.csv"
 FALL_CSV = "fall_video3_marks.csv"
@@ -85,6 +85,23 @@ def load_data():
 			cleaned_windows.append(window)
 			cleaned_labels.append(label)
 		print(f"Dataset {i}: Removed {removed_count} windows due to large/small time gaps")
+
+		# for w in range(len(cleaned_windows)):
+		# 	window = cleaned_windows[w]
+		# 	quaternions= np.tile([1., 0., 0., 0.], (len(window), 1)) # Allocate for quaternions
+		# 	madgwick = Madgwick()
+		# 	for t in range(1, len(window)):
+		# 		dt = window[t][0] / 1000.0  # convert ms to s
+		# 		gyr = window[t][5:8]  # gyro x,y,z
+		# 		acc = window[t][1:4]  # acc x,y,z
+		# 		madgwick.Dt = dt
+		# 		quat = madgwick.updateIMU(quaternions[t-1], gyr=gyr, acc=acc)
+		# 		quaternions[t] = quat
+		# 	# replace gyro data with quaternions
+		# 	window = np.delete(window, [5,6,7], axis=1)
+		# 	window = np.hstack((window, quaternions))
+		# 	cleaned_windows[w] = window
+
 
 		# Data augmentation: for each positive sample, create a mirrored version by negating acc_x and gyro_x
 		# if (i == 0 or i == 1): # only for training set

@@ -106,12 +106,12 @@ void loop() {
 	Serial.println(">roll:" + String(roll, 6));
 	Serial.println(">pitch:" + String(pitch, 6));
 	Serial.println(">yaw:" + String(yaw, 6));
-	// Serial.println(">acc_x:" + String(acc_x, 6));
-	// Serial.println(">acc_y:" + String(acc_y, 6));
-	// Serial.println(">acc_z:" + String(acc_z, 6));
-	// Serial.println(">gyro_x:" + String(gyro_x, 6));
-	// Serial.println(">gyro_y:" + String(gyro_y, 6));
-	// Serial.println(">gyro_z:" + String(gyro_z, 6));
+	Serial.println(">acc_x:" + String(acc_x, 6));
+	Serial.println(">acc_y:" + String(acc_y, 6));
+	Serial.println(">acc_z:" + String(acc_z, 6));
+	Serial.println(">gyro_x:" + String(gyro_x, 6));
+	Serial.println(">gyro_y:" + String(gyro_y, 6));
+	Serial.println(">gyro_z:" + String(gyro_z, 6));
 	// Serial.println(">deltaTime:" + String(deltaTimeF, 6));
 
 	windex1 = (windex1 + 1) % WINDOW_SIZE;

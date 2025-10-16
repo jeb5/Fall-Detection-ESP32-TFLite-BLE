@@ -9,7 +9,7 @@ from tensorflow.keras.callbacks import ModelCheckpoint
 from sklearn.utils.class_weight import compute_class_weight
 
 WINDOW_SIZE = 96
-NUM_CHANNELS = 7
+NUM_CHANNELS = 8
 EPOCHS =600 
 
 np.set_printoptions(precision=4, suppress=True)
