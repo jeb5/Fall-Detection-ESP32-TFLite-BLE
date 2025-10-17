@@ -1,0 +1,111 @@
+#include <Arduino.h>
+
+// #include <AsyncHTTPRequest_Generic.h>
+
+#include "PeripheralIMU.h"
+#include "PeripheralWifi.h"
+#include "model.h"
+#include "tensorflow/lite/micro/all_ops_resolver.h"
+#include "tensorflow/lite/micro/micro_error_reporter.h"
+#include "tensorflow/lite/micro/micro_interpreter.h"
+#include "tensorflow/lite/micro/system_setup.h"
+#include "tensorflow/lite/schema/schema_generated.h"
+
+#define LOOP_DELAY 50		// milliseconds
+#define GPIO_BUTTON 13	// GPIO pin for button input
+
+int log_metrics = 0;
+char server_host[] = "10.112.150.112";
+int server_port = 8000;
+char server_message[] = "POST /i_have_fallen HTTP/1.0";
+
+float data_window[8 * 64 * 8] = {};
+int windex = 0;
+int frames_since_fall = 100;
+unsigned long previousMillis = 0;
+WiFiClient client;
+
+void setup() {
+	Serial.begin(9600);
+	delay(1000);
+	Serial.println("Hello world");
+
+	PeripheralIMU.setup(27, 26);	// SDA, SCL
+
+	PeripheralWifi.connect(1);
+	PeripheralWifi.waitForConnect(1);
+
+	pinMode(GPIO_BUTTON, INPUT_PULLUP);	 // Button
+
+	previousMillis = millis();
+}
+
+void loop() {
+	unsigned long currentMillis = millis();
+	unsigned long deltaTime = currentMillis - previousMillis;
+	previousMillis = currentMillis;
+	AccelData accelData;
+	GyroData gyroData;
+	PeripheralIMU.device.update();
+	PeripheralIMU.device.getAccel(&accelData);
+	PeripheralIMU.device.getGyro(&gyroData);
+
+	float acc_x = accelData.accelX;
+	float acc_y = accelData.accelY;
+	float acc_z = accelData.accelZ;
+	float gyro_x = gyroData.gyroX;
+	float gyro_y = gyroData.gyroY;
+	float gyro_z = gyroData.gyroZ;
+
+	windex = (windex + 1) % (8 * 64);
+
+	int button_value = digitalRead(GPIO_BUTTON) == HIGH ? 0 : 1;
+
+	if (log_metrics == 1) {
+		Serial.print(">time_ms: " + String(currentMillis));
+		Serial.println(">button:" + String(button_value));
+		Serial.print(">acc_x:" + String(acc_x, 6));
+		Serial.print(">acc_y:" + String(acc_y, 6));
+		Serial.print(">acc_z:" + String(acc_z, 6));
+		Serial.print(">gyro_x:" + String(gyro_x, 6));
+		Serial.print(">gyro_y:" + String(gyro_y, 6));
+		Serial.print(">gyro_z:" + String(gyro_z, 6));
+	}
+
+	if (windex % (64 * 4) == 0) {
+		Serial.println("-----");
+		if (PeripheralWifi.isConnected() and client.connect(server_host, server_port)) {
+			// Send entire contents of data_window in HTTP POST request
+			client.println("POST /log_data HTTP/1.0");
+			client.println("Content-Type: application/octet-stream");
+			client.println("Content-Length: " + String(sizeof(data_window)));
+			client.println();
+			client.write((uint8_t*)data_window, sizeof(data_window));
+			client.println();
+			Serial.println("Sent data window to server");
+			// get response from server
+			// while (client.connected()) {
+			// 	if (client.available()) {
+			// 		String line = client.readStringUntil('\n');
+			// 		Serial.println(line);
+			// 	}
+			// }
+		} else {
+			Serial.println("Connection to server failed");
+		}
+	}
+
+	data_window[windex + (0 * 64 * 8)] = (float)currentMillis;
+	data_window[windex + (1 * 64 * 8)] = (float)button_value;
+	data_window[windex + (2 * 64 * 8)] = acc_x;
+	data_window[windex + (3 * 64 * 8)] = acc_y;
+	data_window[windex + (4 * 64 * 8)] = acc_z;
+	data_window[windex + (5 * 64 * 8)] = gyro_x;
+	data_window[windex + (6 * 64 * 8)] = gyro_y;
+	data_window[windex + (7 * 64 * 8)] = gyro_z;
+
+	unsigned long time_spent = millis() - currentMillis;
+	unsigned long time_to_next = LOOP_DELAY > time_spent ? LOOP_DELAY - time_spent : 0;
+
+	delay(time_to_next);
+}

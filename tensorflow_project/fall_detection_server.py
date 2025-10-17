@@ -34,8 +34,6 @@ async def main():
   await scanner.stop()
 
 def detection_callback(device, advertisement_data):
-  if device.name is None or device.name == "LE_WH-1000XM5":
-    return
   if device.name == ESP32_NAME:
     asyncio.create_task(fallen())
 

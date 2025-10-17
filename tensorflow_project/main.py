@@ -9,16 +9,16 @@ from tensorflow.keras.callbacks import ModelCheckpoint
 from sklearn.utils.class_weight import compute_class_weight
 
 WINDOW_SIZE = 96
-NUM_CHANNELS = 8
+NUM_CHANNELS = 7
 EPOCHS =600 
 
 np.set_printoptions(precision=4, suppress=True)
 
 model = tf.keras.models.Sequential([
   tf.keras.layers.Input(shape=(WINDOW_SIZE, NUM_CHANNELS)),
-  tf.keras.layers.Conv1D(8, 3, activation='relu'),
-  tf.keras.layers.Conv1D(16, 5, activation='relu'),
-  tf.keras.layers.Conv1D(32, 10, activation='relu'),
+  tf.keras.layers.Conv1D(7, 3, activation='relu'),
+  tf.keras.layers.Conv1D(14, 5, activation='relu'),
+  tf.keras.layers.Conv1D(28, 10, activation='relu'),
   tf.keras.layers.GlobalAveragePooling1D(),
   tf.keras.layers.Dense(32, activation='relu'),
   tf.keras.layers.Dropout(0.4),

@@ -12,17 +12,6 @@ app = FastAPI()
 # Data storage for plotting - using lists to handle out-of-order data
 max_points = 500
 
-plot_data = {
-    'time': [],
-    'button': [],
-    'acc_x': [],
-    'acc_y': [],
-    'acc_z': [],
-    'gyro_x': [],
-    'gyro_y': [],
-    'gyro_z': [],
-}
-
 # Create figure and subplots with custom layout
 plt.style.use('dark_background')
 fig = plt.figure(figsize=(14, 10))
@@ -140,32 +129,11 @@ def main():
   plt.tight_layout()
   plt.show()
 
-
-# @app.post("/i_have_fallen")
-# async def fallen():
-#   print("Fallen!")
-#   for i in range(25):
-#     for pin in pins:
-#       GPIO.output(pin,GPIO.HIGH)
-#     await asyncio.sleep(0.2)
-#     for pin in pins:
-#       GPIO.output(pin,GPIO.LOW)
-#     await asyncio.sleep(0.2)
-#   return "Okay"
-
-data = {
-    'time': [],
-    'button': [],
-    'acc_x': [],
-    'acc_y': [],
-    'acc_z': [],
-    'gyro_x': [],
-    'gyro_y': [],
-    'gyro_z': [],
-}
 times = set()
 
 names = ['time', 'button', 'acc_x', 'acc_y', 'acc_z', 'gyro_x', 'gyro_y', 'gyro_z']
+
+data = {name: [] for name in names}
 
 @app.post("/log_data")
 async def process_data(request:Request):
@@ -177,7 +145,7 @@ async def process_data(request:Request):
   ints = ints.reshape(8,64*8)
   for i in range(64*8):
     
-    values = [ints[0,i], ints[1,i], floats[2,i], floats[3,i], floats[4,i], floats[5,i], floats[6,i], floats[7,i]]
+    values = [round(floats[0,i]), round(floats[1,i]), floats[2,i], floats[3,i], floats[4,i], floats[5,i], floats[6,i], floats[7,i]]
 
     time_ms = values[0]
     if time_ms in times:
