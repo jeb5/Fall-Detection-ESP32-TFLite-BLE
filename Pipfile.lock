@@ -1,7 +1,7 @@
 {
     "_meta": {
         "hash": {
-            "sha256": "faa36bffe4d2e128a9163ff99c2cfe0c0382582e433f961a948dbf6f8b46ff1f"
+            "sha256": "8b0e8d6269a4e0e078664bdff63eae77c7445298a9c497effdbeee4a35d24543"
         },
         "pipfile-spec": 6,
         "requires": {
@@ -896,6 +896,14 @@
             "markers": "python_version >= '3.9'",
             "version": "==11.3.0"
         },
+        "pyaml": {
+            "hashes": [
+                "sha256:ce5d7867cc2b455efdb9b0448324ff7b9f74d99f64650f12ca570102db6b985f",
+                "sha256:e113a64ec16881bf2b092e2beb84b7dcf1bd98096ad17f5f14e8fb782a75d99b"
+            ],
+            "markers": "python_version >= '3.8'",
+            "version": "==25.7.0"
+        },
         "pydantic": {
             "extras": [
                 "email"
@@ -1401,6 +1409,14 @@
             "index": "pypi",
             "markers": "python_version >= '3.10'",
             "version": "==1.7.2"
+        },
+        "scikit-optimize": {
+            "hashes": [
+                "sha256:00a3d91bf9015e292b6e7aaefe7e6cb95e8d25ce19adafd2cd88849e1a0b0da0",
+                "sha256:45bc7e879b086133984721f2f6735a86c085073f6c481c2ec665b5c67b44d723"
+            ],
+            "index": "pypi",
+            "version": "==0.10.2"
         },
         "scipy": {
             "hashes": [

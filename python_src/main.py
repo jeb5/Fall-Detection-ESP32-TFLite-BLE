@@ -28,7 +28,7 @@ model = tf.keras.models.Sequential([
 loss_fn = tf.keras.losses.BinaryCrossentropy()
 
 checkpoint_cb = ModelCheckpoint(
-    filepath='best_model.keras',   # or 'checkpoints/best_model.keras'
+    filepath='models/new_model.keras',   # or 'checkpoints/best_model.keras'
     monitor='val_f1_score',            # metric to watch
     save_best_only=True,           # only keep best model
     save_weights_only=False,       # save full model (recommended)
@@ -60,7 +60,7 @@ def main(args):
     plot_history(history)
   else:
     print("Loading model from disk...")
-  best_model = tf.keras.models.load_model('best_model.keras')
+  best_model = tf.keras.models.load_model('models/new_model.keras')
 
   confuse(best_model, val_dataset, "Confusion Matrix - Validation Dataset")
   confuse(best_model, test_dataset, "Confusion Matrix - Test Dataset")
@@ -71,7 +71,7 @@ def main(args):
   converter = tf.lite.TFLiteConverter.from_keras_model(best_model)
   tflite_model = converter.convert()
 
-  with open("model.tflite", "wb") as f:
+  with open("models/new_model.tflite", "wb") as f:
       f.write(tflite_model)
 
 def confuse(model, dataset, title, threshold=0.5):

@@ -13,6 +13,7 @@ matplotlib = "*"
 scikit-learn = "*"
 fastapi = {extras = ["standard"], version = "*"}
 ahrs = "*"
+scikit-optimize = "*"
 
 [dev-packages]
 
