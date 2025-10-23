@@ -191,19 +191,33 @@ def naive(window):
         #     pen = pg.mkPen(color="r", width=5)
         #     item = self.plot_custom.plot([], [], pen=pen, name="Fall Events")
         #     self.custom_plot_items.append(item)
-def custom_feature(data, dog_sigma, acc_lp_window, angle_lp_window, angle_exp):
+def custom_feature(data, dog_sigma, acc_lp_window, angle_lp_window, angle_exp, use_doa=False):
     # Data is np array with columns: acc_x, acc_y, acc_z
     acc_mag = np.sqrt(data[0,:]**2 + data[1,:]**2 + data[2,:]**2)
 
-    large_sigma = dog_sigma * 3
-    radius = int(np.ceil(3 * large_sigma))
-    x = np.arange(-radius, radius + 1)
-    gauss_small = np.exp(-0.5 * (x / dog_sigma) ** 2)
-    gauss_small /= gauss_small.sum()
-    gauss_large = np.exp(-0.5 * (x / large_sigma) ** 2)
-    gauss_large /= gauss_large.sum()
-    dog_kernel = gauss_small - gauss_large
-    acc_mag_dog = np.convolve(acc_mag, dog_kernel, mode="same")
+    acc_mag_dog = None
+    if not use_doa: # use DoG
+        large_sigma = dog_sigma * 3
+        radius = int(np.ceil(3 * large_sigma))
+        x = np.arange(-radius, radius + 1)
+        gauss_small = np.exp(-0.5 * (x / dog_sigma) ** 2)
+        gauss_small /= gauss_small.sum()
+        gauss_large = np.exp(-0.5 * (x / large_sigma) ** 2)
+        gauss_large /= gauss_large.sum()
+        dog_kernel = gauss_small - gauss_large
+        acc_mag_dog = np.convolve(acc_mag, dog_kernel, mode="same")
+    else: # use DoA
+        large_sigma = dog_sigma * 3
+        radius = int(np.ceil(3 * large_sigma))
+        a_small = np.zeros(2 * radius + 1) 
+        # a_small's middle RADIUS elements are 1
+        a_small[radius - radius//2 : radius + radius//2 + 1] = 1.0
+        a_small /= a_small.sum()
+        a_large = np.ones(2 * radius + 1) 
+        a_large /= a_large.sum()
+        doa_kernel = a_small - a_large
+        acc_mag_dog = np.convolve(acc_mag, doa_kernel, mode="same")
+
     acc_x_lp = np.convolve(data[0,:], np.ones(acc_lp_window)/acc_lp_window, mode="same")
     acc_y_lp = np.convolve(data[1,:], np.ones(acc_lp_window)/acc_lp_window, mode="same")
     acc_z_lp = np.convolve(data[2,:], np.ones(acc_lp_window)/acc_lp_window, mode="same")

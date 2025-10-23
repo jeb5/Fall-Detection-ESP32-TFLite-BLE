@@ -10,18 +10,18 @@ from sklearn.utils.class_weight import compute_class_weight
 
 WINDOW_SIZE = 96
 NUM_CHANNELS = 7
-EPOCHS =600 
+EPOCHS =600*2 
 
 np.set_printoptions(precision=4, suppress=True)
 
 model = tf.keras.models.Sequential([
   tf.keras.layers.Input(shape=(WINDOW_SIZE, NUM_CHANNELS)),
-  tf.keras.layers.Conv1D(7, 3, activation='relu'),
-  tf.keras.layers.Conv1D(14, 5, activation='relu'),
-  tf.keras.layers.Conv1D(28, 10, activation='relu'),
-  tf.keras.layers.GlobalAveragePooling1D(),
-  tf.keras.layers.Dense(32, activation='relu'),
-  tf.keras.layers.Dropout(0.4),
+  tf.keras.layers.Conv1D(7, 3, activation='relu', padding='same'),
+  tf.keras.layers.Conv1D(16, 4, activation='relu', padding='same'),
+  tf.keras.layers.Conv1D(32, 6, activation='relu', padding='same'),
+  tf.keras.layers.GlobalMaxPooling1D(),
+  tf.keras.layers.Dense(32, activation='relu', kernel_regularizer=tf.keras.regularizers.l2(0.001)),
+  tf.keras.layers.Dropout(0.5),
   tf.keras.layers.Dense(1, activation='sigmoid')
 ])
 
@@ -54,7 +54,8 @@ def main(args):
   print(f"Computed class weights: {class_weight_dict}")
 
   if not args.load_model:
-    history = model.fit(train_dataset, validation_data=val_dataset, epochs=EPOCHS, callbacks=[checkpoint_cb], class_weight=class_weight_dict)
+    # history = model.fit(train_dataset, validation_data=val_dataset, epochs=EPOCHS, callbacks=[checkpoint_cb], class_weight=class_weight_dict)
+    history = model.fit(train_dataset, validation_data=val_dataset, epochs=EPOCHS, callbacks=[checkpoint_cb])
     print("Training complete.")
     print("Loading best model from checkpoint...")
     plot_history(history)

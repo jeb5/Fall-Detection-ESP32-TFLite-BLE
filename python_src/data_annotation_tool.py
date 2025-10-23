@@ -272,16 +272,16 @@ class DataAnnotater(QtWidgets.QWidget):
             self.custom_plot_items.append(item)
         
         # low pass angle change multiplied by acc dog
-        if "angle_change_lp" in self.custom_data_dict and "acc_magnitude_dog" in self.custom_data_dict:
-            angle_change_lp = self.custom_data_dict["angle_change_lp"]
-            acc_mag_dog = self.custom_data_dict["acc_magnitude_dog"]
-            combined_feature = angle_change_lp * acc_mag_dog
-            self.custom_data_dict["combined_feature"] = combined_feature
+        # if "angle_change_lp" in self.custom_data_dict and "acc_magnitude_dog" in self.custom_data_dict:
+        #     angle_change_lp = self.custom_data_dict["angle_change_lp"]
+        #     acc_mag_dog = self.custom_data_dict["acc_magnitude_dog"]
+        #     combined_feature = angle_change_lp * acc_mag_dog
+        #     self.custom_data_dict["combined_feature"] = combined_feature
             
-            # Create plot item for combined feature
-            pen = pg.mkPen(color="w", width=2)
-            item = self.plot_custom.plot([], [], pen=pen, name="Combined Feature")
-            self.custom_plot_items.append(item)
+        #     # Create plot item for combined feature
+        #     pen = pg.mkPen(color="w", width=2)
+        #     item = self.plot_custom.plot([], [], pen=pen, name="Combined Feature")
+        #     self.custom_plot_items.append(item)
 
         # naive_values = [0] * (193 - 81)
         # for i in range(len(self.data_t)-193):
@@ -307,15 +307,16 @@ class DataAnnotater(QtWidgets.QWidget):
         ))
         print(acc_data.shape)
 
-        custom_feature_values = custom_feature(acc_data, 9, 30, 30, 1)
+        # optimal_params = (6.6, 40, 16, 1.0, 0.07)
+        custom_feature_values = custom_feature(acc_data, 6.6, 40, 16, 1.0)
         self.custom_data_dict["custom_feature"] = custom_feature_values
         # Create plot item for custom feature
         pen = pg.mkPen(color="g", width=2)
         item = self.plot_custom.plot([], [], pen=pen, name="Custom Feature")
         self.custom_plot_items.append(item)
 
-        if "combined_feature" in self.custom_data_dict:
-            fall = self.custom_data_dict["combined_feature"] > 0.07
+        if "custom_feature" in self.custom_data_dict:
+            fall = self.custom_data_dict["custom_feature"] > 0.07
             self.custom_data_dict["fall_events"] = fall.astype(float)
             # Create plot item for fall events
             pen = pg.mkPen(color="r", width=5)
