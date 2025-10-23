@@ -308,7 +308,7 @@ class DataAnnotater(QtWidgets.QWidget):
         print(acc_data.shape)
 
         # optimal_params = (6.6, 40, 16, 1.0, 0.07)
-        custom_feature_values = custom_feature(acc_data, 6.6, 40, 16, 1.0)
+        custom_feature_values, _ = custom_feature(acc_data, 6.6, 40, 16, 1.0)
         self.custom_data_dict["custom_feature"] = custom_feature_values
         # Create plot item for custom feature
         pen = pg.mkPen(color="g", width=2)

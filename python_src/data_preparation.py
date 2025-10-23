@@ -21,8 +21,8 @@ DATA_FILES = [["data/session1_data_sorted.csv", "data/session1_marks.csv"],
 
 FALL_WINDOW_MS = 3000
 N_SAMPLES_EACH_FALL_TRAIN = 4
-WINDOW_SIZE = 96
-BATCH_SIZE = 32
+WINDOW_SIZE = 64
+BATCH_SIZE = 40
 
 np.set_printoptions(precision=4, suppress=True)
 
@@ -42,7 +42,10 @@ def get_naive_classified_data(params):
       times = data[:,0].copy()  # shape (N,)
       deltaTimes = np.diff(times, prepend=0)  # shape (N,)
       acc_data = data[:,1:4].T  # shape (3, N)
-      custom_feature_data = custom_feature(acc_data, dog_sigma, acc_lp_window, angle_lp_window, angle_exp, use_doa=False)
+      custom_feature_data, angles_data = custom_feature(acc_data, dog_sigma, acc_lp_window, angle_lp_window, angle_exp, use_doa=False)
+      # add custom_feature_data to data as new column
+      data = np.concatenate((data, angles_data.reshape(-1,1)), axis=1)  # shape (N, 8)
+      data = np.concatenate((data, custom_feature_data.reshape(-1,1)), axis=1)  # shape (N, 9)
       # Find the middle of each block, where custom_feature_data > threshold
       blocks = np.where(np.diff(np.concatenate(([0], custom_feature_data > threshold, [0]))))[0].reshape(-1, 2)
       # Get time of maximum in each block
@@ -95,7 +98,6 @@ def get_naive_classified_data(params):
                   break
           if not match_found:
               false_positives.append(window_data)
-              print(f"False positive detected at time {times[detected_index]}ms, in dataset {data_file}")
       all_true_positives.extend(true_positives)
       all_false_positives.extend(false_positives)
 
@@ -107,7 +109,7 @@ def get_naive_classified_data(params):
 
 
 def load_data():
-  optimal_params = (6.6, 40, 16, 1.0, 0.07)
+  optimal_params = (6.6, 40, 16, 1.0, 0.04)
   true_positives, false_positives, total_falls = get_naive_classified_data(optimal_params)
 
   X = np.array(true_positives + false_positives)
@@ -125,20 +127,21 @@ def load_data():
     if (i == 0 or i == 1): # only for training set
       augmented_windows = list(datasets[i][0])
       augmented_labels = list(datasets[i][1])
-      # for axis in range(3):
-      #   for j in range(len(datasets[i][0])):
-      #     window = datasets[i][0][j]
-      #     label = datasets[i][1][j]
-      #     mirrored_window = np.copy(window)
-      #     mirrored_window[:, 1+axis] = -mirrored_window[:, 1+axis]  # Negate acc
-      #     mirrored_window[:, 4+axis] = -mirrored_window[:, 4+axis]  # Negate gyro
-      #     augmented_windows.append(mirrored_window)
-      #     augmented_labels.append(label)
+      for axis in range(3):
+        for j in range(len(datasets[i][0])):
+          window = datasets[i][0][j]
+          label = datasets[i][1][j]
+          mirrored_window = np.copy(window)
+          mirrored_window[:, 1+axis] = -mirrored_window[:, 1+axis]  # Negate acc
+          mirrored_window[:, 4+axis] = -mirrored_window[:, 4+axis]  # Negate gyro
+          augmented_windows.append(mirrored_window)
+          augmented_labels.append(label)
+
       for axis_slide in range(2):
         axis1 = axis_slide
         axis2 = (axis_slide + 1) % 3
         axis3 = (axis_slide + 2) % 3
-        for j in range(len(datasets[i][0])):
+        for j in range(len(datasets[i][0])*3):
           window = augmented_windows[j].copy()
           label = augmented_labels[j]
           window[:, 1+axis1], window[:, 1+axis2], window[:, 1+axis3] = window[:, 1+axis2], window[:, 1+axis3], window[:, 1+axis1]
@@ -147,6 +150,9 @@ def load_data():
           augmented_labels.append(label)
 
       datasets[i] = (np.array(augmented_windows), np.array(augmented_labels))
+    # remove deltaTime column from all windows
+    new_X = datasets[i][0][:,:,1:]
+    datasets[i] = (new_X, datasets[i][1])
 
   X_train, Y_train = datasets[0]
   X_val, Y_val = datasets[1]
@@ -167,19 +173,20 @@ def load_data():
   # Get shape of one batch
   for x_batch, y_batch in train_dataset.take(1):
     print(f"One batch x shape: {x_batch.shape}, y shape: {y_batch.shape}")
-    # Visualise window 1
-    plt.figure(figsize=(12, 4))
-    plt.plot(x_batch[0,:,1], label='acc_x')
-    plt.plot(x_batch[0,:,2], label='acc_y')
-    plt.plot(x_batch[0,:,3], label='acc_z')
-    plt.plot(x_batch[0,:,4], label='gyro_x')
-    plt.plot(x_batch[0,:,5], label='gyro_y')
-    plt.plot(x_batch[0,:,6], label='gyro_z')
-    plt.title(f'Sample Window Data (First in Batch) - Label: {y_batch[0].numpy()[0]}')
-    plt.xlabel('Time Steps')
-    plt.ylabel('Sensor Values')
-    plt.legend()
-    plt.show()
+    # for i in range(x_batch.shape[0]):
+    #   # Visualise window i
+    #   plt.figure(figsize=(12, 4))
+    #   plt.plot(x_batch[i,:,1], label='acc_x')
+    #   plt.plot(x_batch[i,:,2], label='acc_y')
+    #   plt.plot(x_batch[i,:,3], label='acc_z')
+    #   plt.plot(x_batch[i,:,4], label='gyro_x')
+    #   plt.plot(x_batch[i,:,5], label='gyro_y')
+    #   plt.plot(x_batch[i,:,6], label='gyro_z')
+    #   plt.title(f'Sample Window Data (First in Batch) - Label: {y_batch[i].numpy()[0]}')
+    #   plt.xlabel('Time Steps')
+    #   plt.ylabel('Sensor Values')
+    #   plt.legend()
+    #   plt.show()
 
   for x_batch, y_batch in val_dataset.take(1):
     print(f"One batch x shape: {x_batch.shape}, y shape: {y_batch.shape}")
@@ -188,13 +195,12 @@ def load_data():
 
 def make_dataset(x,y):
   def augment(window, label):
-    # Add some random noise
-    noise_factor = 0.08
+    # Add some random noise (excluding columns 6 and 7)
+    noise_factor = 0.10
     noise = np.random.normal(loc=0.0, scale=noise_factor, size=window.shape).astype(np.float32)
-    noisy_window = window + noise
-    # Random scaling
-    scale_factor = np.random.normal(loc=1.0, scale=0.1)
-    noisy_window = noisy_window * scale_factor
+    noise[:, 6] = noise[:, 6] * 0.1
+    noise[:, 7] = noise[:, 7] * 0.1
+    noisy_window = window * (1 + noise)
 
     return noisy_window, label
   return tf.data.Dataset.from_tensor_slices((x,y)).map(augment).shuffle(len(x)).batch(BATCH_SIZE).prefetch(tf.data.AUTOTUNE)

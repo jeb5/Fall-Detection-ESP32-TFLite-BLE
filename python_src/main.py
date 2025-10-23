@@ -7,38 +7,44 @@ from sklearn.metrics import confusion_matrix, ConfusionMatrixDisplay
 from sklearn.metrics import classification_report
 from tensorflow.keras.callbacks import ModelCheckpoint
 from sklearn.utils.class_weight import compute_class_weight
+from tensorflow.keras import layers
+WINDOW_SIZE = 64
+NUM_CHANNELS = 8
+# channels: acc_x, acc_y, acc_z, gyro_x, gyro_y, gyro_z, angle_change, custom_feature
+EPOCHS = 400
 
-WINDOW_SIZE = 96
-NUM_CHANNELS = 7
-EPOCHS =600*2 
-
-np.set_printoptions(precision=4, suppress=True)
 
 model = tf.keras.models.Sequential([
-  tf.keras.layers.Input(shape=(WINDOW_SIZE, NUM_CHANNELS)),
-  tf.keras.layers.Conv1D(7, 3, activation='relu', padding='same'),
-  tf.keras.layers.Conv1D(16, 4, activation='relu', padding='same'),
-  tf.keras.layers.Conv1D(32, 6, activation='relu', padding='same'),
-  tf.keras.layers.GlobalMaxPooling1D(),
-  tf.keras.layers.Dense(32, activation='relu', kernel_regularizer=tf.keras.regularizers.l2(0.001)),
-  tf.keras.layers.Dropout(0.5),
-  tf.keras.layers.Dense(1, activation='sigmoid')
+  layers.Input(shape=(WINDOW_SIZE, NUM_CHANNELS)),
+  layers.Conv1D(8, 5, activation='relu'),
+  layers.MaxPooling1D(pool_size=2),
+  layers.Conv1D(16, 3, activation='relu'),
+  # layers.Conv1D(32, 6, activation='relu'),
+  layers.GlobalMaxPooling1D(),
+  layers.Dense(8, activation='relu'),
+  # layers.Dropout(0.4),
+  layers.Dense(1, activation='sigmoid')
 ])
 
 loss_fn = tf.keras.losses.BinaryCrossentropy()
 
 checkpoint_cb = ModelCheckpoint(
-    filepath='models/new_model.keras',   # or 'checkpoints/best_model.keras'
-    monitor='val_f1_score',            # metric to watch
-    save_best_only=True,           # only keep best model
-    save_weights_only=False,       # save full model (recommended)
-    mode='max',                    # because lower val_loss is better
+    filepath='models/new_model.keras',
+    monitor='val_f1_score',
+    save_best_only=True,
+    save_weights_only=False,
+    mode='max',
     verbose=1,
 )
 
+np.set_printoptions(precision=4, suppress=True)
+
 optimizer = tf.keras.optimizers.Adam(learning_rate=0.001)
 
-model.compile(optimizer=optimizer, loss=loss_fn, metrics=['accuracy', 'f1_score'])
+f1_score_metric = tf.keras.metrics.F1Score(name='f1_score', average='weighted')
+
+model.compile(optimizer=optimizer, loss=loss_fn, metrics=['accuracy', f1_score_metric])
+
 
 def main(args):
   print(model.summary())
@@ -46,7 +52,7 @@ def main(args):
   # Get training y labels for class weight computation
   y = np.array([])
   for _, labels in train_dataset:
-      y = np.concatenate((y, labels.numpy().flatten()))
+    y = np.concatenate((y, labels.numpy().flatten()))
 
   classes = np.unique(y)
   class_weights = compute_class_weight(class_weight='balanced', classes=classes, y=y)
@@ -73,70 +79,71 @@ def main(args):
   tflite_model = converter.convert()
 
   with open("models/new_model.tflite", "wb") as f:
-      f.write(tflite_model)
+    f.write(tflite_model)
+
 
 def confuse(model, dataset, title, threshold=0.5):
-    y_true = np.array([])
-    y_pred = np.array([])
+  y_true = np.array([])
+  y_pred = np.array([])
 
-    for x, y in dataset:
-        preds = model.predict(x)
-        y_true = np.concatenate((y_true, y.numpy().flatten()))
-        y_pred = np.concatenate((y_pred, (preds > threshold).astype(int).flatten()))
+  for x, y in dataset:
+    preds = model.predict(x)
+    y_true = np.concatenate((y_true, y.numpy().flatten()))
+    y_pred = np.concatenate((y_pred, (preds > threshold).astype(int).flatten()))
 
-    # classification report
-    print(classification_report(y_true, y_pred, digits=4))
+  # classification report
+  print(classification_report(y_true, y_pred, digits=4))
 
+  cm = confusion_matrix(y_true, y_pred)
+  disp = ConfusionMatrixDisplay(confusion_matrix=cm, display_labels=[0, 1])
+  disp.plot(cmap=plt.cm.Blues)
+  plt.title(title)
+  plt.show()
 
-    cm = confusion_matrix(y_true, y_pred)
-    disp = ConfusionMatrixDisplay(confusion_matrix=cm, display_labels=[0, 1])
-    disp.plot(cmap=plt.cm.Blues)
-    plt.title(title)
-    plt.show()
 
 def plot_history(history):
 
-    acc = history.history['accuracy']
-    val_acc = history.history['val_accuracy']
-    loss = history.history['loss']
-    val_loss = history.history['val_loss']
-    f1 = history.history['f1_score']
-    val_f1 = history.history['val_f1_score']
-    epochs = range(1, len(acc) + 1)
+  acc = history.history['accuracy']
+  val_acc = history.history['val_accuracy']
+  loss = history.history['loss']
+  val_loss = history.history['val_loss']
+  f1 = history.history['f1_score']
+  val_f1 = history.history['val_f1_score']
+  epochs = range(1, len(acc) + 1)
 
-    plt.figure(figsize=(18, 5))
+  plt.figure(figsize=(18, 5))
 
-    plt.subplot(1, 3, 1)
-    plt.plot(epochs, acc, 'b', label='Training acc')
-    plt.plot(epochs, val_acc, 'r', label='Validation acc')
-    plt.title('Training and validation accuracy')
-    plt.xlabel('Epochs')
-    plt.ylabel('Accuracy')
-    plt.legend()
+  plt.subplot(1, 3, 1)
+  plt.plot(epochs, acc, 'b', label='Training acc')
+  plt.plot(epochs, val_acc, 'r', label='Validation acc')
+  plt.title('Training and validation accuracy')
+  plt.xlabel('Epochs')
+  plt.ylabel('Accuracy')
+  plt.legend()
 
-    plt.subplot(1, 3, 2)
-    plt.plot(epochs, loss, 'b', label='Training loss')
-    plt.plot(epochs, val_loss, 'r', label='Validation loss')
-    plt.title('Training and validation loss')
-    plt.xlabel('Epochs')
-    plt.ylabel('Loss')
-    plt.legend()
+  plt.subplot(1, 3, 2)
+  plt.plot(epochs, loss, 'b', label='Training loss')
+  plt.plot(epochs, val_loss, 'r', label='Validation loss')
+  plt.title('Training and validation loss')
+  plt.xlabel('Epochs')
+  plt.ylabel('Loss')
+  plt.legend()
 
-    plt.subplot(1, 3, 3)
-    plt.plot(epochs, f1, 'b', label='Training F1 Score')
-    plt.plot(epochs, val_f1, 'r', label='Validation F1 Score')
-    plt.title('Training and validation F1 Score')
-    plt.xlabel('Epochs')
-    plt.ylabel('F1 Score')
-    plt.legend()
+  plt.subplot(1, 3, 3)
+  plt.plot(epochs, f1, 'b', label='Training F1 Score')
+  plt.plot(epochs, val_f1, 'r', label='Validation F1 Score')
+  plt.title('Training and validation F1 Score')
+  plt.xlabel('Epochs')
+  plt.ylabel('F1 Score')
+  plt.legend()
 
-    plt.tight_layout()
+  plt.tight_layout()
 
+  plt.show()
 
-    plt.show()
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Train and evaluate a fall model.")
-    parser.add_argument('--load_model', action='store_true', help="Load a pre-trained model from disk.")
-    args = parser.parse_args()
-    main(args)
+  parser = argparse.ArgumentParser(description="Train and evaluate a fall model.")
+  parser.add_argument('--load_model', action='store_true', help="Load a pre-trained model from disk.")
+  args = parser.parse_args()
+  main(args)
