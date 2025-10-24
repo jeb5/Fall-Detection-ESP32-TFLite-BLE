@@ -8,22 +8,32 @@ from sklearn.metrics import classification_report
 from tensorflow.keras.callbacks import ModelCheckpoint
 from sklearn.utils.class_weight import compute_class_weight
 from tensorflow.keras import layers
+
+tf.get_logger().setLevel('ERROR')
+
 WINDOW_SIZE = 64
 NUM_CHANNELS = 8
 # channels: acc_x, acc_y, acc_z, gyro_x, gyro_y, gyro_z, angle_change, custom_feature
-EPOCHS = 400
+EPOCHS = 600
 
 
+# Fall classification model
+# Must be small enough to run on microcontroller
+# Essential to avoid overfitting due to small dataset size
+# Architecture 1: Deeper CNN with Dropout
 model = tf.keras.models.Sequential([
-  layers.Input(shape=(WINDOW_SIZE, NUM_CHANNELS)),
-  layers.Conv1D(8, 5, activation='relu'),
-  layers.MaxPooling1D(pool_size=2),
-  layers.Conv1D(16, 3, activation='relu'),
-  # layers.Conv1D(32, 6, activation='relu'),
-  layers.GlobalMaxPooling1D(),
-  layers.Dense(8, activation='relu'),
-  # layers.Dropout(0.4),
-  layers.Dense(1, activation='sigmoid')
+    layers.Input(shape=(WINDOW_SIZE, NUM_CHANNELS)),
+    layers.Conv1D(16, 5, activation='relu'),
+    layers.MaxPooling1D(pool_size=2),
+    layers.Dropout(0.3),
+    layers.Conv1D(32, 3, activation='relu'),
+    layers.MaxPooling1D(pool_size=2),
+    layers.Dropout(0.3),
+    layers.Conv1D(16, 3, activation='relu'),
+    layers.GlobalMaxPooling1D(),
+    layers.Dense(16, activation='relu'),
+    layers.Dropout(0.4),
+    layers.Dense(1, activation='sigmoid')
 ])
 
 loss_fn = tf.keras.losses.BinaryCrossentropy()
@@ -34,12 +44,12 @@ checkpoint_cb = ModelCheckpoint(
     save_best_only=True,
     save_weights_only=False,
     mode='max',
-    verbose=1,
+    verbose=0,
 )
 
 np.set_printoptions(precision=4, suppress=True)
 
-optimizer = tf.keras.optimizers.Adam(learning_rate=0.001)
+optimizer = tf.keras.optimizers.Adam(learning_rate=0.002)
 
 f1_score_metric = tf.keras.metrics.F1Score(name='f1_score', average='weighted')
 
@@ -47,39 +57,39 @@ model.compile(optimizer=optimizer, loss=loss_fn, metrics=['accuracy', f1_score_m
 
 
 def main(args):
-  print(model.summary())
+  # print(model.summary())
   train_dataset, val_dataset, test_dataset = data_preparation.load_data()
   # Get training y labels for class weight computation
   y = np.array([])
   for _, labels in train_dataset:
     y = np.concatenate((y, labels.numpy().flatten()))
 
-  classes = np.unique(y)
-  class_weights = compute_class_weight(class_weight='balanced', classes=classes, y=y)
-  class_weight_dict = {cls.astype(int): weight.astype(float) for cls, weight in zip(classes, class_weights)}
-  print(f"Computed class weights: {class_weight_dict}")
+  # classes = np.unique(y)
+  # class_weights = compute_class_weight(class_weight='balanced', classes=classes, y=y)
+  # class_weight_dict = {cls.astype(int): weight.astype(float) for cls, weight in zip(classes, class_weights)}
 
   if not args.load_model:
     # history = model.fit(train_dataset, validation_data=val_dataset, epochs=EPOCHS, callbacks=[checkpoint_cb], class_weight=class_weight_dict)
-    history = model.fit(train_dataset, validation_data=val_dataset, epochs=EPOCHS, callbacks=[checkpoint_cb])
+    print("Training model...")
+    history = model.fit(train_dataset, validation_data=val_dataset, epochs=EPOCHS, callbacks=[checkpoint_cb], verbose=0)
     print("Training complete.")
     print("Loading best model from checkpoint...")
-    plot_history(history)
+    # plot_history(history)
   else:
     print("Loading model from disk...")
   best_model = tf.keras.models.load_model('models/new_model.keras')
 
-  confuse(best_model, val_dataset, "Confusion Matrix - Validation Dataset")
-  confuse(best_model, test_dataset, "Confusion Matrix - Test Dataset")
+  confuse(best_model, val_dataset, "Validation Dataset")
+  confuse(best_model, test_dataset, "Test Dataset")
 
-  print("Evaluating on test dataset...")
-  best_model.evaluate(test_dataset)
+  # print("Evaluating on test dataset...")
+  # best_model.evaluate(test_dataset, verbose=0)
 
-  converter = tf.lite.TFLiteConverter.from_keras_model(best_model)
-  tflite_model = converter.convert()
+  # converter = tf.lite.TFLiteConverter.from_keras_model(best_model)
+  # tflite_model = converter.convert()
 
-  with open("models/new_model.tflite", "wb") as f:
-    f.write(tflite_model)
+  # with open("models/new_model.tflite", "wb") as f:
+  #   f.write(tflite_model)
 
 
 def confuse(model, dataset, title, threshold=0.5):
@@ -87,18 +97,19 @@ def confuse(model, dataset, title, threshold=0.5):
   y_pred = np.array([])
 
   for x, y in dataset:
-    preds = model.predict(x)
+    preds = model.predict(x, verbose=0)
     y_true = np.concatenate((y_true, y.numpy().flatten()))
     y_pred = np.concatenate((y_pred, (preds > threshold).astype(int).flatten()))
 
   # classification report
+  print(f"Classification Report for {title}:")
   print(classification_report(y_true, y_pred, digits=4))
 
-  cm = confusion_matrix(y_true, y_pred)
-  disp = ConfusionMatrixDisplay(confusion_matrix=cm, display_labels=[0, 1])
-  disp.plot(cmap=plt.cm.Blues)
-  plt.title(title)
-  plt.show()
+  # cm = confusion_matrix(y_true, y_pred)
+  # disp = ConfusionMatrixDisplay(confusion_matrix=cm, display_labels=[0, 1])
+  # disp.plot(cmap=plt.cm.Blues)
+  # plt.title(title)
+  # plt.show()
 
 
 def plot_history(history):

@@ -101,9 +101,10 @@ def get_naive_classified_data(params):
       all_true_positives.extend(true_positives)
       all_false_positives.extend(false_positives)
 
-  print("True Positives:", len(all_true_positives))
-  print("False Positives:", len(all_false_positives))
-  print("Total Falls:", total_falls, "(Removed", total_real_falls_removed, "due to large time gaps)")
+  # print("Naive classification information:")
+  # print("True Positives:", len(all_true_positives))
+  # print("False Positives:", len(all_false_positives))
+  # print("Total Falls:", total_falls, "(Removed", total_real_falls_removed, "due to large time gaps)")
 
   return all_true_positives, all_false_positives, total_falls
 
@@ -158,6 +159,7 @@ def load_data():
   X_val, Y_val = datasets[1]
   X_test, Y_test = datasets[2]
 
+  print("Dataset sizes after training & validation augmentation:")
   print(f"Train set: {sum(Y_train)} positive samples, {len(Y_train)-sum(Y_train)} negative samples")
   print(f"Val set: {sum(Y_val)} positive samples, {len(Y_val)-sum(Y_val)} negative samples")
   print(f"Test set: {sum(Y_test)} positive samples, {len(Y_test)-sum(Y_test)} negative samples")
@@ -171,8 +173,8 @@ def load_data():
   val_dataset = make_dataset(X_val, Y_val)
   test_dataset = make_dataset(X_test, Y_test)
   # Get shape of one batch
-  for x_batch, y_batch in train_dataset.take(1):
-    print(f"One batch x shape: {x_batch.shape}, y shape: {y_batch.shape}")
+  # for x_batch, y_batch in train_dataset.take(1):
+    # print(f"One batch x shape: {x_batch.shape}, y shape: {y_batch.shape}")
     # for i in range(x_batch.shape[0]):
     #   # Visualise window i
     #   plt.figure(figsize=(12, 4))
