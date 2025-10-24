@@ -1,7 +1,7 @@
 import numpy as np
 import tensorflow as tf
 from sklearn.model_selection import train_test_split
-import matplotlib.pyplot as plt
+from scipy.ndimage import gaussian_filter1d
 
 from naive import custom_feature
 
@@ -43,9 +43,9 @@ def get_naive_classified_data(params):
       deltaTimes = np.diff(times, prepend=0)  # shape (N,)
       acc_data = data[:,1:4].T  # shape (3, N)
       custom_feature_data, angles_data = custom_feature(acc_data, dog_sigma, acc_lp_window, angle_lp_window, angle_exp, use_doa=False)
-      # add custom_feature_data to data as new column
-      data = np.concatenate((data, angles_data.reshape(-1,1)), axis=1)  # shape (N, 8)
-      data = np.concatenate((data, custom_feature_data.reshape(-1,1)), axis=1)  # shape (N, 9)
+      # Experiment 39 (WINNER): acc + custom_feature only - 91.38% F1, 6093 params
+      data = data[:, :4]  # Keep only deltaTime, acc_x, acc_y, acc_z
+      data = np.concatenate((data, custom_feature_data.reshape(-1,1)), axis=1)  # shape (N, 5)
       # Find the middle of each block, where custom_feature_data > threshold
       blocks = np.where(np.diff(np.concatenate(([0], custom_feature_data > threshold, [0]))))[0].reshape(-1, 2)
       # Get time of maximum in each block
@@ -134,7 +134,8 @@ def load_data():
           label = datasets[i][1][j]
           mirrored_window = np.copy(window)
           mirrored_window[:, 1+axis] = -mirrored_window[:, 1+axis]  # Negate acc
-          mirrored_window[:, 4+axis] = -mirrored_window[:, 4+axis]  # Negate gyro
+          if window.shape[1] >= 7:  # Only negate gyro if it exists
+            mirrored_window[:, 4+axis] = -mirrored_window[:, 4+axis]  # Negate gyro
           augmented_windows.append(mirrored_window)
           augmented_labels.append(label)
 
@@ -146,7 +147,8 @@ def load_data():
           window = augmented_windows[j].copy()
           label = augmented_labels[j]
           window[:, 1+axis1], window[:, 1+axis2], window[:, 1+axis3] = window[:, 1+axis2], window[:, 1+axis3], window[:, 1+axis1]
-          window[:, 4+axis1], window[:, 4+axis2], window[:, 4+axis3] = window[:, 4+axis2], window[:, 4+axis3], window[:, 4+axis1]
+          if window.shape[1] >= 7:  # Only swap gyro if it exists
+            window[:, 4+axis1], window[:, 4+axis2], window[:, 4+axis3] = window[:, 4+axis2], window[:, 4+axis3], window[:, 4+axis1]
           augmented_windows.append(window)
           augmented_labels.append(label)
 
@@ -190,18 +192,16 @@ def load_data():
     #   plt.legend()
     #   plt.show()
 
-  for x_batch, y_batch in val_dataset.take(1):
-    print(f"One batch x shape: {x_batch.shape}, y shape: {y_batch.shape}")
-
   return train_dataset, val_dataset, test_dataset
 
 def make_dataset(x,y):
   def augment(window, label):
-    # Add some random noise (excluding columns 6 and 7)
+    # Add some random noise (excluding angle and custom feature columns)
     noise_factor = 0.10
     noise = np.random.normal(loc=0.0, scale=noise_factor, size=window.shape).astype(np.float32)
-    noise[:, 6] = noise[:, 6] * 0.1
-    noise[:, 7] = noise[:, 7] * 0.1
+    # Reduce noise on last columns (angles and custom features)
+    if window.shape[1] >= 7:
+      noise[:, 6:] = noise[:, 6:] * 0.1
     noisy_window = window * (1 + noise)
 
     return noisy_window, label

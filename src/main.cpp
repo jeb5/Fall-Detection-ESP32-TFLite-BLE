@@ -13,8 +13,9 @@
 
 #define LOOP_DELAY 50		// milliseconds
 #define GPIO_BUTTON 13	// GPIO pin for button input
-#define WINDOW_SIZE 96
-#define CIRCULARBUFFER_SIZE (WINDOW_SIZE * 2)
+#define WINDOW_SIZE 64
+// #define CIRCULARBUFFER_SIZE (WINDOW_SIZE * 2)
+#define CIRCULARBUFFER_SIZE (163)
 #define FALL_CONFIRMATION_COUNTDOWN 300
 #define FALL_REPORTING_COUNTDOWN 800
 
@@ -24,6 +25,7 @@ int server_port = 8000;
 char server_message[] = "POST /i_have_fallen HTTP/1.0";
 
 float circular_buffer[CIRCULARBUFFER_SIZE * 7] = {};
+float supporting_circular_buffer[CIRCULARBUFFER_SIZE * 2] = {};
 int windex = 0;
 int frames_since_fall = FALL_REPORTING_COUNTDOWN + 1;
 unsigned long previousMillis = 0;
@@ -36,6 +38,8 @@ TfLiteTensor* input = nullptr;
 TfLiteTensor* output = nullptr;
 // Madgwick filter;
 NimBLEAdvertising* pAdvertising;
+float dog_kernel[163];
+long long loop_count = 0;
 
 constexpr int kTensorArenaSize = 3000 * 10;
 uint8_t tensor_arena[kTensorArenaSize];
@@ -80,6 +84,43 @@ void setup() {
 	pAdvertising->setMinInterval(100);
 	pAdvertising->setMaxInterval(200);
 	pAdvertising->setConnectableMode(BLE_GAP_CONN_MODE_NON);
+
+	int radius = 81;
+	float sigma_small = 9.0f;
+	float sigma_large = 27.0f;
+	// x = np.arange(-radius, radius + 1)
+	float sum = 0.0f;
+	float small_gauss[163];
+	for (int i = -radius; i <= radius; i++) {
+		float value = exp(-0.5f * pow((i / sigma_small), 2));
+		small_gauss[i + radius] = value;
+		sum += value;
+	}
+	for (int i = 0; i < 2 * radius + 1; i++) {
+		small_gauss[i] /= sum;
+	}
+	sum = 0.0f;
+	float large_gauss[163];
+	for (int i = -radius; i <= radius; i++) {
+		float value = exp(-0.5f * pow((i / sigma_large), 2));
+		large_gauss[i + radius] = value;
+		sum += value;
+	}
+	for (int i = 0; i < 2 * radius + 1; i++) {
+		large_gauss[i] /= sum;
+	}
+	for (int i = 0; i < 2 * radius + 1; i++) {
+		dog_kernel[i] = small_gauss[i] - large_gauss[i];
+	}
+
+	for (int i = 0; i < CIRCULARBUFFER_SIZE; i++) {
+		for (int j = 0; j < 7; j++) {
+			circular_buffer[i * 7 + j] = 0.0f;
+		}
+		for (int j = 0; j < 2; j++) {
+			supporting_circular_buffer[i * 2 + j] = 0.0f;
+		}
+	}
 
 	pinMode(GPIO_BUTTON, INPUT_PULLUP);	 // Button
 	pinMode(25, OUTPUT);								 // BUZZER
@@ -146,10 +187,6 @@ void loop() {
 	// float roll = filter.getRoll();
 	// float pitch = filter.getPitch();
 	// float yaw = filter.getYaw();
-	// Serial.println(">roll:" + String(roll, 6));
-	// Serial.println(">pitch:" + String(pitch, 6));
-	// Serial.println(">yaw:" + String(yaw, 6));
-	// Serial.println(">deltaTime:" + String(deltaTimeF, 6));
 
 	windex++;
 	if (windex >= CIRCULARBUFFER_SIZE) {
@@ -157,25 +194,83 @@ void loop() {
 	}
 
 	int base_index = windex * 7;	// 7 features per timestep
-	circular_buffer[base_index + 0] = deltaTimeF;
-	circular_buffer[base_index + 1] = acc_x;
-	circular_buffer[base_index + 2] = acc_y;
-	circular_buffer[base_index + 3] = acc_z;
-	circular_buffer[base_index + 4] = gyro_x;
-	circular_buffer[base_index + 5] = gyro_y;
-	circular_buffer[base_index + 6] = gyro_z;
+	circular_buffer[base_index + 0] = acc_x;
+	circular_buffer[base_index + 1] = acc_y;
+	circular_buffer[base_index + 2] = acc_z;
+	circular_buffer[base_index + 3] = gyro_x;
+	circular_buffer[base_index + 4] = gyro_y;
+	circular_buffer[base_index + 5] = gyro_z;
+	circular_buffer[base_index + 6] = 0;
+
+	int fi = (windex - 82 + CIRCULARBUFFER_SIZE) % CIRCULARBUFFER_SIZE;
+	{
+		// We are interested in calculating the metrics in the middle of the window, at index 82 (fi)
+		// We will calculate the acc low pass value at 82+15 = 97, using values from 82+30 = 112
+		// We will calculate the angle change metric at 82, using values from 82+15 = 97
+		float mag_acc = sqrtf(acc_x * acc_x + acc_y * acc_y + acc_z * acc_z);
+		supporting_circular_buffer[windex * 2 + 0] = mag_acc;
+
+		static float acc_x_sum = 0.0f;
+		static float acc_y_sum = 0.0f;
+		static float acc_z_sum = 0.0f;
+		static float angle_sum = 0.0f;
+
+		int fiP15 = (fi + 15) % CIRCULARBUFFER_SIZE;
+		int fiP30 = (fi + 30) % CIRCULARBUFFER_SIZE;
+		int fiM15 = (fi - 15 + CIRCULARBUFFER_SIZE) % CIRCULARBUFFER_SIZE;
+		int fiM30 = (fi - 30 + CIRCULARBUFFER_SIZE) % CIRCULARBUFFER_SIZE;
+
+		acc_x_sum += circular_buffer[fiP30 * 7 + 0];
+		acc_x_sum -= circular_buffer[fi * 7 + 0];
+		acc_y_sum += circular_buffer[fiP30 * 7 + 1];
+		acc_y_sum -= circular_buffer[fi * 7 + 1];
+		acc_z_sum += circular_buffer[fiP30 * 7 + 2];
+		acc_z_sum -= circular_buffer[fi * 7 + 2];
+
+		float acc_x_lp = acc_x_sum / 30.0f;
+		float acc_y_lp = acc_y_sum / 30.0f;
+		float acc_z_lp = acc_z_sum / 30.0f;
+
+		float acc_x_P15 = circular_buffer[fiP15 * 7 + 0];
+		float acc_y_P15 = circular_buffer[fiP15 * 7 + 1];
+		float acc_z_P15 = circular_buffer[fiP15 * 7 + 2];
+
+		float dot_prod = acc_z_P15 * acc_x_lp + acc_y_P15 * acc_y_lp + acc_z_P15 * acc_z_lp;
+
+		float mag_acc_P15 = supporting_circular_buffer[fiP15 * 2 + 0];
+		float mag_acc_lp = sqrtf(acc_x_lp * acc_x_lp + acc_y_lp * acc_y_lp + acc_z_lp * acc_z_lp);
+		float cos_angle = dot_prod / (mag_acc_P15 * mag_acc_lp + 1e-6f);
+		float angle = acosf(min(max(cos_angle, -1.0f), 1.0f));
+		supporting_circular_buffer[fi * 1 + 0] = angle;
+		angle_sum += angle;
+		angle_sum -= supporting_circular_buffer[fiM30 * 1 + 0];
+		float angle_lp = angle_sum / 30.0f;
+
+		float dog_value = 0.0f;
+		for (int i = 0; i < 163; i++) {
+			int index = (windex - 82 + i + CIRCULARBUFFER_SIZE) % CIRCULARBUFFER_SIZE;
+			float mag_acc_i = supporting_circular_buffer[index * 2 + 0];
+			dog_value += mag_acc_i * dog_kernel[i];
+		}
+		float final_feature = dog_value * angle_lp;
+		circular_buffer[fi * 7 + 6] = final_feature;
+
+		if (final_feature > 0.07f) {
+			Serial.println("High final feature value: " + String(final_feature, 6));
+		}
+	}
 
 	// If the middle elements in the window has an acceleration magnitude > 2, there might be a fall.
 
 	bool possible_fall = false;
-	float ax = circular_buffer[(((windex - (WINDOW_SIZE / 2)) + CIRCULARBUFFER_SIZE) % CIRCULARBUFFER_SIZE) * 7 + 1];
-	float ay = circular_buffer[(((windex - (WINDOW_SIZE / 2)) + CIRCULARBUFFER_SIZE) % CIRCULARBUFFER_SIZE) * 7 + 2];
-	float az = circular_buffer[(((windex - (WINDOW_SIZE / 2)) + CIRCULARBUFFER_SIZE) % CIRCULARBUFFER_SIZE) * 7 + 3];
-	float acc_mag = sqrtf(pow(ax, 2) + pow(ay, 2) + pow(az, 2));
-	if (acc_mag > 2.0f) {
-		possible_fall = true;
-		Serial.println("Possible fall detected based on acceleration magnitude: " + String(acc_mag, 6));
-	}
+	// float ax = circular_buffer[(((windex - (WINDOW_SIZE / 2)) + CIRCULARBUFFER_SIZE) % CIRCULARBUFFER_SIZE) * 7 + 1];
+	// float ay = circular_buffer[(((windex - (WINDOW_SIZE / 2)) + CIRCULARBUFFER_SIZE) % CIRCULARBUFFER_SIZE) * 7 + 2];
+	// float az = circular_buffer[(((windex - (WINDOW_SIZE / 2)) + CIRCULARBUFFER_SIZE) % CIRCULARBUFFER_SIZE) * 7 + 3];
+	// float acc_mag = sqrtf(pow(ax, 2) + pow(ay, 2) + pow(az, 2));
+	// if (acc_mag > 2.0f) {
+	// 	possible_fall = true;
+	// 	Serial.println("Possible fall detected based on acceleration magnitude: " + String(acc_mag, 6));
+	// }
 
 	float inference_result = 0.0f;
 	if (possible_fall && frames_since_fall > FALL_REPORTING_COUNTDOWN) {
@@ -217,16 +312,21 @@ void loop() {
 	unsigned long time_to_next = LOOP_DELAY > time_spent ? LOOP_DELAY - time_spent : 0;
 
 	if (log_metrics) {
-		Serial.println(">acc_x:" + String(acc_x, 6));
-		Serial.println(">acc_y:" + String(acc_y, 6));
-		Serial.println(">acc_z:" + String(acc_z, 6));
-		Serial.println(">gyro_x:" + String(gyro_x, 6));
-		Serial.println(">gyro_y:" + String(gyro_y, 6));
-		Serial.println(">gyro_z:" + String(gyro_z, 6));
-		Serial.println(">inference_result:" + String(inference_result, 6));
-		Serial.print(">loop_time:");
-		Serial.println(time_spent);
+		float acc_x_fi = circular_buffer[fi * 7 + 0];
+		float acc_y_fi = circular_buffer[fi * 7 + 1];
+		float acc_z_fi = circular_buffer[fi * 7 + 2];
+		float custom_feature_fi = circular_buffer[fi * 7 + 6];
+
+		Serial.println(">acc_x:" + String(acc_x_fi, 6));
+		Serial.println(">acc_y:" + String(acc_y_fi, 6));
+		Serial.println(">acc_z:" + String(acc_z_fi, 6));
+		Serial.println(">custom_feature:" + String(custom_feature_fi, 6));
+		Serial.println(">time_spent:" + String(time_spent));
+		// Serial.println(">gyro_x:" + String(gyro_x, 6));
+		// Serial.println(">gyro_y:" + String(gyro_y, 6));
+		// Serial.println(">gyro_z:" + String(gyro_z, 6));
 	}
+	loop_count++;
 
 	delay(time_to_next);
 }
