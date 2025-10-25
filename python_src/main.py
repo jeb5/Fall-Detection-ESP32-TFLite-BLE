@@ -104,11 +104,11 @@ def main(args):
   print("Evaluating on test dataset...")
   best_model.evaluate(test_dataset, verbose=0)
 
-  converter = tf.lite.TFLiteConverter.from_keras_model(best_model)
-  tflite_model = converter.convert()
+  # converter = tf.lite.TFLiteConverter.from_keras_model(best_model)
+  # tflite_model = converter.convert()
 
-  with open("models/new_model.tflite", "wb") as f:
-    f.write(tflite_model)
+  # with open("models/new_model.tflite", "wb") as f:
+  #   f.write(tflite_model)
 
 
 def confuse(model, dataset, title, threshold=0.5):

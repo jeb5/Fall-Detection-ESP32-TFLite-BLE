@@ -229,4 +229,4 @@ def custom_feature(data, dog_sigma, acc_lp_window, angle_lp_window, angle_exp, u
     angles = np.arccos(cos_angle)  # in radians
     angles_lp = np.convolve(angles, np.ones(angle_lp_window)/angle_lp_window, mode="same")
     combined_feature = (angles_lp ** angle_exp) * acc_mag_dog
-    return combined_feature, angles
+    return combined_feature, (angles_lp, acc_mag_dog, angles)

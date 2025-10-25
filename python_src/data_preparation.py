@@ -27,6 +27,7 @@ BATCH_SIZE = 40
 np.set_printoptions(precision=4, suppress=True)
 
 def get_naive_classified_data(params):
+  #   optimal_params = (6.6, 40, 16, 1.0, 0.07)
   dog_sigma, acc_lp_window, angle_lp_window, angle_exp, threshold = params
   all_true_positives = []
   all_false_positives = []
@@ -42,7 +43,7 @@ def get_naive_classified_data(params):
       times = data[:,0].copy()  # shape (N,)
       deltaTimes = np.diff(times, prepend=0)  # shape (N,)
       acc_data = data[:,1:4].T  # shape (3, N)
-      custom_feature_data, angles_data = custom_feature(acc_data, dog_sigma, acc_lp_window, angle_lp_window, angle_exp, use_doa=False)
+      custom_feature_data, angleslp_data = custom_feature(acc_data, dog_sigma, acc_lp_window, angle_lp_window, angle_exp, use_doa=False)
       # Experiment 39 (WINNER): acc + custom_feature only - 91.38% F1, 6093 params
       data = data[:, :4]  # Keep only deltaTime, acc_x, acc_y, acc_z
       data = np.concatenate((data, custom_feature_data.reshape(-1,1)), axis=1)  # shape (N, 5)
@@ -111,6 +112,7 @@ def get_naive_classified_data(params):
 
 def load_data():
   optimal_params = (6.6, 40, 16, 1.0, 0.04)
+  # optimal_params = (6.6, 40, 16, 1.0, 0.07)
   true_positives, false_positives, total_falls = get_naive_classified_data(optimal_params)
 
   X = np.array(true_positives + false_positives)

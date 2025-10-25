@@ -18,7 +18,13 @@ columns = {
     "acc_z": {},
     "gyro_x": {"scale": 0.02},
     "gyro_y": {"scale": 0.02},
-    "gyro_z": {"scale": 0.02}
+    "gyro_z": {"scale": 0.02},
+    "custom_feature":{},
+    "acc_mag":{},
+    "angle_lp":{},
+    "dog_value":{},
+    "angle":{},
+    "fall":{}
 }
 
 class DataAnnotater(QtWidgets.QWidget):
@@ -194,82 +200,82 @@ class DataAnnotater(QtWidgets.QWidget):
             item = self.plot_custom.plot([], [], pen=pen, name="Acc Magnitude")
             self.custom_plot_items.append(item)
         
-        # Acceleration magnitude low-pass filtered
-        if "acc_magnitude" in self.custom_data_dict:
-            acc_mag = self.custom_data_dict["acc_magnitude"]
+        # # Acceleration magnitude low-pass filtered
+        # if "acc_magnitude" in self.custom_data_dict:
+        #     acc_mag = self.custom_data_dict["acc_magnitude"]
 
-            window_size = 96  # samples
-            # Simple averaging filter
-            kernel = np.ones(window_size) / window_size
-            acc_mag_lp = np.convolve(acc_mag, kernel, mode="same")
+        #     window_size = 96  # samples
+        #     # Simple averaging filter
+        #     kernel = np.ones(window_size) / window_size
+        #     acc_mag_lp = np.convolve(acc_mag, kernel, mode="same")
 
-            self.custom_data_dict["acc_magnitude_lp"] = acc_mag_lp
+        #     self.custom_data_dict["acc_magnitude_lp"] = acc_mag_lp
             
-            # Create plot item for low-pass filtered acceleration magnitude
-            pen = pg.mkPen(color="r", width=1)
-            item = self.plot_custom.plot([], [], pen=pen, name="Acc Magnitude LPF")
-            self.custom_plot_items.append(item)
+        #     # Create plot item for low-pass filtered acceleration magnitude
+        #     pen = pg.mkPen(color="r", width=1)
+        #     item = self.plot_custom.plot([], [], pen=pen, name="Acc Magnitude LPF")
+        #     self.custom_plot_items.append(item)
 
-        # Difference of Gaussians on acceleration magnitude
-        if "acc_magnitude" in self.custom_data_dict:
-            acc_mag = self.custom_data_dict["acc_magnitude"]
+        # # Difference of Gaussians on acceleration magnitude
+        # if "acc_magnitude" in self.custom_data_dict:
+        #     acc_mag = self.custom_data_dict["acc_magnitude"]
 
-            sigma_small = 9
-            sigma_large = sigma_small * 3
-            radius = int(np.ceil(3 * sigma_large))
-            x = np.arange(-radius, radius + 1)
+        #     sigma_small = 9
+        #     sigma_large = sigma_small * 3
+        #     radius = int(np.ceil(3 * sigma_large))
+        #     x = np.arange(-radius, radius + 1)
 
-            gauss_small = np.exp(-0.5 * (x / sigma_small) ** 2)
-            gauss_small /= gauss_small.sum()
+        #     gauss_small = np.exp(-0.5 * (x / sigma_small) ** 2)
+        #     gauss_small /= gauss_small.sum()
 
-            gauss_large = np.exp(-0.5 * (x / sigma_large) ** 2)
-            gauss_large /= gauss_large.sum()
+        #     gauss_large = np.exp(-0.5 * (x / sigma_large) ** 2)
+        #     gauss_large /= gauss_large.sum()
 
-            dog_kernel = gauss_small - gauss_large
-            acc_mag_dog = np.convolve(acc_mag, dog_kernel, mode="same")
-            self.custom_data_dict["acc_magnitude_dog"] = acc_mag_dog
+        #     dog_kernel = gauss_small - gauss_large
+        #     acc_mag_dog = np.convolve(acc_mag, dog_kernel, mode="same")
+        #     self.custom_data_dict["acc_magnitude_dog"] = acc_mag_dog
             
-            # Create plot item for low-pass filtered acceleration magnitude
-            pen = pg.mkPen(color="b", width=2)
-            item = self.plot_custom.plot([], [], pen=pen, name="Acc Magnitude DoG")
-            self.custom_plot_items.append(item)
-        # Angle away from low pass acceleration
-        if "acc_magnitude_lp" in self.custom_data_dict:
-            # Get low-pass acc_x, acc_y, acc_z
-            acc_x = self.data_v_dict["acc_x"]
-            acc_y = self.data_v_dict["acc_y"]
-            acc_z = self.data_v_dict["acc_z"]
-            # window_size = 96  # samples
-            window_size = 30  # samples
-            kernel = np.ones(window_size) / window_size
-            acc_x_lp = np.convolve(acc_x, kernel, mode="same")
-            acc_y_lp = np.convolve(acc_y, kernel, mode="same")
-            acc_z_lp = np.convolve(acc_z, kernel, mode="same")
-            # Get angle between (acc_x, acc_y, acc_z) and (acc_x_lp, acc_y_lp, acc_z_lp)
-            dot_product = (acc_x * acc_x_lp + acc_y * acc_y_lp + acc_z * acc_z_lp)
-            mag_orig = np.sqrt(acc_x**2 + acc_y**2 + acc_z**2)
-            mag_lp = np.sqrt(acc_x_lp**2 + acc_y_lp**2 + acc_z_lp**2)
-            cos_angle = dot_product / (mag_orig * mag_lp + 1e-6)
-            cos_angle = np.clip(cos_angle, -1.0, 1.0)
-            angles = np.arccos(cos_angle)  # in radians
-            self.custom_data_dict["angle_from_lp"] = angles
-            # Create plot item for angle from low-pass acceleration
-            pen = pg.mkPen(color="c", width=0.5)
-            item = self.plot_custom.plot([], [], pen=pen, name="Angle from LP Acc")
-            self.custom_plot_items.append(item)
+        #     # Create plot item for low-pass filtered acceleration magnitude
+        #     pen = pg.mkPen(color="b", width=2)
+        #     item = self.plot_custom.plot([], [], pen=pen, name="Acc Magnitude DoG")
+        #     self.custom_plot_items.append(item)
+        # # Angle away from low pass acceleration
+        # if "acc_magnitude_lp" in self.custom_data_dict:
+        #     # Get low-pass acc_x, acc_y, acc_z
+        #     acc_x = self.data_v_dict["acc_x"]
+        #     acc_y = self.data_v_dict["acc_y"]
+        #     acc_z = self.data_v_dict["acc_z"]
+        #     # window_size = 96  # samples
+        #     window_size = 30  # samples
+        #     kernel = np.ones(window_size) / window_size
+        #     acc_x_lp = np.convolve(acc_x, kernel, mode="same")
+        #     acc_y_lp = np.convolve(acc_y, kernel, mode="same")
+        #     acc_z_lp = np.convolve(acc_z, kernel, mode="same")
+        #     # Get angle between (acc_x, acc_y, acc_z) and (acc_x_lp, acc_y_lp, acc_z_lp)
+        #     dot_product = (acc_x * acc_x_lp + acc_y * acc_y_lp + acc_z * acc_z_lp)
+        #     mag_orig = np.sqrt(acc_x**2 + acc_y**2 + acc_z**2)
+        #     mag_lp = np.sqrt(acc_x_lp**2 + acc_y_lp**2 + acc_z_lp**2)
+        #     cos_angle = dot_product / (mag_orig * mag_lp + 1e-6)
+        #     cos_angle = np.clip(cos_angle, -1.0, 1.0)
+        #     angles = np.arccos(cos_angle)  # in radians
+        #     self.custom_data_dict["angle_from_lp"] = angles
+        #     # Create plot item for angle from low-pass acceleration
+        #     pen = pg.mkPen(color="c", width=0.5)
+        #     item = self.plot_custom.plot([], [], pen=pen, name="Angle from LP Acc")
+        #     self.custom_plot_items.append(item)
 
-        # Low-pass angle change
-        if "angle_from_lp" in self.custom_data_dict:
-            angles = self.custom_data_dict["angle_from_lp"]
-            window_size = 30  # samples
-            kernel = np.ones(window_size) / window_size
-            angle_diff_lp = np.convolve(angles, kernel, mode="same")
-            self.custom_data_dict["angle_change_lp"] = np.abs(angle_diff_lp)
+        # # Low-pass angle change
+        # if "angle_from_lp" in self.custom_data_dict:
+        #     angles = self.custom_data_dict["angle_from_lp"]
+        #     window_size = 30  # samples
+        #     kernel = np.ones(window_size) / window_size
+        #     angle_diff_lp = np.convolve(angles, kernel, mode="same")
+        #     self.custom_data_dict["angle_change_lp"] = np.abs(angle_diff_lp)
             
-            # Create plot item for low-pass angle change
-            pen = pg.mkPen(color="y", width=1)
-            item = self.plot_custom.plot([], [], pen=pen, name="Angle Change LPF")
-            self.custom_plot_items.append(item)
+        #     # Create plot item for low-pass angle change
+        #     pen = pg.mkPen(color="y", width=1)
+        #     item = self.plot_custom.plot([], [], pen=pen, name="Angle Change LPF")
+        #     self.custom_plot_items.append(item)
         
         # low pass angle change multiplied by acc dog
         # if "angle_change_lp" in self.custom_data_dict and "acc_magnitude_dog" in self.custom_data_dict:
@@ -305,14 +311,27 @@ class DataAnnotater(QtWidgets.QWidget):
             self.data_v_dict["acc_y"],
             self.data_v_dict["acc_z"]
         ))
-        print(acc_data.shape)
 
         # optimal_params = (6.6, 40, 16, 1.0, 0.07)
-        custom_feature_values, _ = custom_feature(acc_data, 6.6, 40, 16, 1.0)
+        custom_feature_values, (anglechange_lp, acc_mag_dog, angles) = custom_feature(acc_data, 6.6, 40, 16, 1.0)
         self.custom_data_dict["custom_feature"] = custom_feature_values
-        # Create plot item for custom feature
         pen = pg.mkPen(color="g", width=2)
         item = self.plot_custom.plot([], [], pen=pen, name="Custom Feature")
+        self.custom_plot_items.append(item)
+
+        self.custom_data_dict["angle_change_lp"] = anglechange_lp
+        pen = pg.mkPen(color="b", width=1)
+        item = self.plot_custom.plot([], [], pen=pen, name="Angle Change LPF")
+        self.custom_plot_items.append(item)
+
+        self.custom_data_dict["acc_magnitude_dog"] = acc_mag_dog
+        pen = pg.mkPen(color="c", width=1)
+        item = self.plot_custom.plot([], [], pen=pen, name="Acc Magnitude DoG")
+        self.custom_plot_items.append(item)
+
+        self.custom_data_dict["angles"] = angles
+        pen = pg.mkPen(color="m", width=1)
+        item = self.plot_custom.plot([], [], pen=pen, name="Angles")
         self.custom_plot_items.append(item)
 
         if "custom_feature" in self.custom_data_dict:
