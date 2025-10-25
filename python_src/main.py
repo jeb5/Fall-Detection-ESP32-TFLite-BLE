@@ -15,7 +15,7 @@ WINDOW_SIZE = 64
 NUM_CHANNELS = 4  # Experiment 39 (WINNER): acc_x, acc_y, acc_z, custom_feature
 # Optimal configuration: 91.38% F1-score with only 6,093 parameters
 # Key insight: Gyro data and angle features are redundant when custom_feature is included
-EPOCHS = 600
+EPOCHS = 40
 
 
 # Fall classification model
@@ -104,11 +104,11 @@ def main(args):
   print("Evaluating on test dataset...")
   best_model.evaluate(test_dataset, verbose=0)
 
-  # converter = tf.lite.TFLiteConverter.from_keras_model(best_model)
-  # tflite_model = converter.convert()
+  converter = tf.lite.TFLiteConverter.from_keras_model(best_model)
+  tflite_model = converter.convert()
 
-  # with open("models/new_model.tflite", "wb") as f:
-  #   f.write(tflite_model)
+  with open("models/new_model.tflite", "wb") as f:
+    f.write(tflite_model)
 
 
 def confuse(model, dataset, title, threshold=0.5):
@@ -117,6 +117,7 @@ def confuse(model, dataset, title, threshold=0.5):
 
   for x, y in dataset:
     preds = model.predict(x, verbose=0)
+    print("Predictions:", preds.flatten())
     y_true = np.concatenate((y_true, y.numpy().flatten()))
     y_pred = np.concatenate((y_pred, (preds > threshold).astype(int).flatten()))
 

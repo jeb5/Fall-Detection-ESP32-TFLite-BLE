@@ -126,8 +126,7 @@ def load_data():
 
   for i in range(3):
     # Data augmentation: for each positive sample, create a mirrored version by negating acc_x and gyro_x
-    # if (i == 0 or i == 1): # only for training set
-    if (i == 0 or i == 1): # only for training set
+    if (i == 0 or i == 1): # only for training and validation sets
       augmented_windows = list(datasets[i][0])
       augmented_labels = list(datasets[i][1])
       for axis in range(3):
@@ -196,7 +195,7 @@ def load_data():
 
   return train_dataset, val_dataset, test_dataset
 
-def make_dataset(x,y):
+def make_dataset(x,y, use_augmentation=False):
   def augment(window, label):
     # Add some random noise (excluding angle and custom feature columns)
     noise_factor = 0.10
@@ -207,7 +206,12 @@ def make_dataset(x,y):
     noisy_window = window * (1 + noise)
 
     return noisy_window, label
-  return tf.data.Dataset.from_tensor_slices((x,y)).map(augment).shuffle(len(x)).batch(BATCH_SIZE).prefetch(tf.data.AUTOTUNE)
+  dataset = None
+  if use_augmentation:
+    dataset = tf.data.Dataset.from_tensor_slices((x,y)).map(augment).shuffle(len(x)).batch(BATCH_SIZE).prefetch(tf.data.AUTOTUNE)
+  else:
+    dataset = tf.data.Dataset.from_tensor_slices((x,y)).shuffle(len(x)).batch(BATCH_SIZE).prefetch(tf.data.AUTOTUNE)
+  return dataset
 
 
 def get_index_after_time(data, time_ms, start_index):
