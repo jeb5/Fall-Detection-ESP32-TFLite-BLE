@@ -1,6 +1,8 @@
-# Fall Detection on ESP32 with TensorFlow Lite Micro and BLE
+# Fall Detection on ESP32 with TensorFlow Lite and BLE
 
 ![Fall Detection Poster](images/fall_poster.png)
+
+This project implements a fall detection system using an ESP32 microcontroller equipped with an IMU (Inertial Measurement Unit) sensor. The system collects motion data, and a naive threshold-based algorithm runs in real time to detect potential falls. Once a potential fall is detected, a TensorFlow Lite model is used to classify the event more accurately. If a fall is confirmed, the ESP32 begins a countdown, and if not cancelled, it sends a Bluetooth Low Energy (BLE) advertisement indicating that a fall has occurred.
 
 ## Building ESP32 Firmware
 - `cd lib && git clone it@github.com:LiquidCGS/FastIMU.git`
