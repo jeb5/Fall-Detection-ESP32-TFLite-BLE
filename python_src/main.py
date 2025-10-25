@@ -12,18 +12,13 @@ from tensorflow.keras import layers
 tf.get_logger().setLevel('ERROR')
 
 WINDOW_SIZE = 64
-NUM_CHANNELS = 4  # Experiment 39 (WINNER): acc_x, acc_y, acc_z, custom_feature
-# Optimal configuration: 91.38% F1-score with only 6,093 parameters
-# Key insight: Gyro data and angle features are redundant when custom_feature is included
+NUM_CHANNELS = 4  # acc_x, acc_y, acc_z, custom_feature
 EPOCHS = 40
 
-
 # Fall classification model
-# Must be small enough to run on microcontroller
+# Small enough to run on microcontroller
 # Essential to avoid overfitting due to small dataset size
-# Experiment 39 (WINNER): 91.38% Test F1 with only 6,093 parameters
-# Architecture: 14-28-28-14 filters with Dense(32,16) and Dropout(0.2,0.3)
-# Channels: acc_x, acc_y, acc_z, custom_feature (DoG*angle)
+
 def create_model():
   model = tf.keras.Sequential([
       layers.Conv1D(14, 5, activation='relu', input_shape=(WINDOW_SIZE, NUM_CHANNELS)),
@@ -107,7 +102,7 @@ def main(args):
   converter = tf.lite.TFLiteConverter.from_keras_model(best_model)
   tflite_model = converter.convert()
 
-  with open("models/new_model.tflite", "wb") as f:
+  with open("models/model.tflite", "wb") as f:
     f.write(tflite_model)
 
 

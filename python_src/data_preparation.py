@@ -1,7 +1,6 @@
 import numpy as np
 import tensorflow as tf
 from sklearn.model_selection import train_test_split
-from scipy.ndimage import gaussian_filter1d
 
 from naive import custom_feature
 

@@ -1,5 +1,6 @@
+#define DATA_COLLECTION_MODE 0
+#if !DATA_COLLECTION_MODE
 #include <Arduino.h>
-// #include <MadgwickAHRS.h>
 #include <NimBLEDevice.h>
 
 #include <vector>
@@ -94,6 +95,7 @@ void setup() {
 	pAdvertising->setMaxInterval(200);
 	pAdvertising->setConnectableMode(BLE_GAP_CONN_MODE_NON);
 
+	// Set up DoG kernel
 	float sigma_small = 6.6f;
 	float sigma_large = sigma_small * 3;
 	float sum = 0.0f;
@@ -118,15 +120,6 @@ void setup() {
 	}
 	for (int i = 0; i < DOG_SIZE; i++) {
 		dog_kernel[i] = small_gauss[i] - large_gauss[i];
-	}
-
-	for (int i = 0; i < CIRCULARBUFFER_SIZE; i++) {
-		for (int j = 0; j < CBC; j++) {
-			circular_buffer[i * CBC + j] = 0.0f;
-		}
-		for (int j = 0; j < SBC; j++) {
-			supporting_circular_buffer[i * SBC + j] = 0.0f;
-		}
 	}
 
 	pinMode(GPIO_BUTTON, INPUT_PULLUP);	 // Button
@@ -241,11 +234,9 @@ void loop() {
 			if (final_feature > max_feature_current_fall) {
 				max_feature_current_fall = final_feature;
 				max_feature_index = loop_count - DOG_RADIUS;
-				LOG("FELL at WINDEX: " + String((windex - DOG_RADIUS + CIRCULARBUFFER_SIZE) % CIRCULARBUFFER_SIZE));
 			}
 		} else if (max_feature_index != 0 && (final_feature < FALL_FEATURE_THRESHOLD)) {	// Stopped falling
 			// Record the fall event
-			// LOG("Detected fall feature at index " + String(max_feature_index) + " with value " + String(max_feature_current_fall, 6));
 			fall_indices.push_back(max_feature_index);
 			// tone(25, 2800, 200);
 			// tone(25, 1800, 200);
@@ -276,16 +267,6 @@ void loop() {
 		LOG("Copied first part of size " + String(first_copy_size_bytes) + " bytes to address: " + String((unsigned long)input->data.f, HEX));
 		if (second_copy_size > 0) memcpy(input->data.f + first_copy_size * CBC, &circular_buffer[0], second_copy_size_bytes);
 		LOG("Copied second part of size " + String(second_copy_size_bytes) + " bytes to address: " + String((unsigned long)(input->data.f + first_copy_size * CBC), HEX));
-
-		// // Log out input->data.f as csv to verify correctness
-		// for (int i = 0; i < INFERENCE_WINDOW_SIZE; i++) {
-		// 	String row = "";
-		// 	for (int j = 0; j < CBC; j++) {
-		// 		row += String(input->data.f[i * CBC + j], 6);
-		// 		if (j < CBC - 1) row += ",";
-		// 	}
-		// 	LOG(row);
-		// }
 
 		TfLiteStatus invoke_status = interpreter->Invoke();
 		unsigned long t_end = millis();
@@ -323,3 +304,4 @@ void loop() {
 
 	delay(time_to_next);
 }
+#endif

@@ -127,6 +127,7 @@ def main():
   # Start plotting on the main thread
   ani = FuncAnimation(fig, update_plot, interval=200, blit=True)
   plt.tight_layout()
+  fig.canvas.manager.set_window_title("Data Collection Server")
   plt.show()
 
 times = set()

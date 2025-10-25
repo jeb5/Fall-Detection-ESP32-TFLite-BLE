@@ -1,10 +1,9 @@
+#define DATA_COLLECTION_MODE 0
+#if DATA_COLLECTION_MODE
 #include <Arduino.h>
-
-// #include <AsyncHTTPRequest_Generic.h>
 
 #include "PeripheralIMU.h"
 #include "PeripheralWifi.h"
-#include "model.h"
 #include "tensorflow/lite/micro/all_ops_resolver.h"
 #include "tensorflow/lite/micro/micro_error_reporter.h"
 #include "tensorflow/lite/micro/micro_interpreter.h"
@@ -15,9 +14,8 @@
 #define GPIO_BUTTON 13	// GPIO pin for button input
 
 int log_metrics = 0;
-char server_host[] = "10.112.150.112";
+char server_host[] = "10.112.149.6";
 int server_port = 8000;
-char server_message[] = "POST /i_have_fallen HTTP/1.0";
 
 float data_window[8 * 64 * 8] = {};
 int windex = 0;
@@ -83,13 +81,6 @@ void loop() {
 			client.write((uint8_t*)data_window, sizeof(data_window));
 			client.println();
 			Serial.println("Sent data window to server");
-			// get response from server
-			// while (client.connected()) {
-			// 	if (client.available()) {
-			// 		String line = client.readStringUntil('\n');
-			// 		Serial.println(line);
-			// 	}
-			// }
 		} else {
 			Serial.println("Connection to server failed");
 		}
@@ -109,3 +100,4 @@ void loop() {
 
 	delay(time_to_next);
 }
+#endif

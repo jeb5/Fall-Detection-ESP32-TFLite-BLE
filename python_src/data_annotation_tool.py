@@ -1,4 +1,7 @@
-# video_scrubber.py
+#
+# NOTE:
+# A large portion of this code was created with Generative AI
+#
 import math
 import sys
 import os
