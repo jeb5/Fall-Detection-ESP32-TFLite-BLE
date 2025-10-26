@@ -1,16 +1,16 @@
-#include "PeripheralWifi.h"
+#include "DeviceWifi.h"
 
-PeripheralWifiClass::PeripheralWifiClass() {
+DeviceWifiClass::DeviceWifiClass() {
 };
 
-void PeripheralWifiClass::connect(int verbose) {
+void DeviceWifiClass::connect(int verbose) {
 	if (verbose) Serial.print("Connecting to WiFi...");
 
 	WiFi.mode(WIFI_STA);
 	WiFi.begin(ssid, WPA2_AUTH_PEAP, identity, username, password);
 }
 
-void PeripheralWifiClass::waitForConnect(int verbose) {
+void DeviceWifiClass::waitForConnect(int verbose) {
 	while (WiFi.status() != WL_CONNECTED) {
 		delay(500);
 		if (verbose) Serial.print(".");
@@ -21,7 +21,7 @@ void PeripheralWifiClass::waitForConnect(int verbose) {
 		Serial.println(WiFi.localIP());
 	}
 }
-int PeripheralWifiClass::isConnected() {
+int DeviceWifiClass::isConnected() {
 	return WiFi.status() == WL_CONNECTED;
 }
-PeripheralWifiClass PeripheralWifi;
+DeviceWifiClass DeviceWifi;

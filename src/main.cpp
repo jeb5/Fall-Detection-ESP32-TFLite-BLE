@@ -5,7 +5,7 @@
 
 #include <vector>
 
-#include "PeripheralIMU.h"
+#include "DeviceIMU.h"
 #include "model.h"
 #include "tensorflow/lite/micro/all_ops_resolver.h"
 #include "tensorflow/lite/micro/micro_error_reporter.h"
@@ -86,7 +86,7 @@ void setup() {
 	input = interpreter->input(0);
 	output = interpreter->output(0);
 
-	PeripheralIMU.setup(27, 26);	// SDA, SCL
+	DeviceIMU.setup(27, 26);	// SDA, SCL
 
 	NimBLEDevice::init("FallDetector");
 	pAdvertising = NimBLEDevice::getAdvertising();
@@ -158,8 +158,8 @@ void loop() {
 	unsigned long deltaTime = currentMillis - previousMillis;
 	previousMillis = currentMillis;
 	AccelData accelData;
-	PeripheralIMU.device.update();
-	PeripheralIMU.device.getAccel(&accelData);
+	DeviceIMU.device.update();
+	DeviceIMU.device.getAccel(&accelData);
 
 	float deltaTimeF = (float)deltaTime;
 	float acc_x = accelData.accelX;

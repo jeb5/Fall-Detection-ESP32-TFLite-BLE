@@ -2,8 +2,8 @@
 #if DATA_COLLECTION_MODE
 #include <Arduino.h>
 
-#include "PeripheralIMU.h"
-#include "PeripheralWifi.h"
+#include "DeviceIMU.h"
+#include "DeviceWifi.h"
 #include "tensorflow/lite/micro/all_ops_resolver.h"
 #include "tensorflow/lite/micro/micro_error_reporter.h"
 #include "tensorflow/lite/micro/micro_interpreter.h"
@@ -28,10 +28,10 @@ void setup() {
 	delay(1000);
 	Serial.println("Hello world");
 
-	PeripheralIMU.setup(27, 26);	// SDA, SCL
+	DeviceIMU.setup(27, 26);	// SDA, SCL
 
-	PeripheralWifi.connect(1);
-	PeripheralWifi.waitForConnect(1);
+	DeviceWifi.connect(1);
+	DeviceWifi.waitForConnect(1);
 
 	pinMode(GPIO_BUTTON, INPUT_PULLUP);	 // Button
 
@@ -44,9 +44,9 @@ void loop() {
 	previousMillis = currentMillis;
 	AccelData accelData;
 	GyroData gyroData;
-	PeripheralIMU.device.update();
-	PeripheralIMU.device.getAccel(&accelData);
-	PeripheralIMU.device.getGyro(&gyroData);
+	DeviceIMU.device.update();
+	DeviceIMU.device.getAccel(&accelData);
+	DeviceIMU.device.getGyro(&gyroData);
 
 	float acc_x = accelData.accelX;
 	float acc_y = accelData.accelY;
@@ -72,7 +72,7 @@ void loop() {
 
 	if (windex % (64 * 4) == 0) {
 		Serial.println("-----");
-		if (PeripheralWifi.isConnected() and client.connect(server_host, server_port)) {
+		if (DeviceWifi.isConnected() and client.connect(server_host, server_port)) {
 			// Send entire contents of data_window in HTTP POST request
 			client.println("POST /log_data HTTP/1.0");
 			client.println("Content-Type: application/octet-stream");

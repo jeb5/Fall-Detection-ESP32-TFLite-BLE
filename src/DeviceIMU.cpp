@@ -1,7 +1,7 @@
-#include "PeripheralIMU.h"
+#include "DeviceIMU.h"
 
 calData calib = {1, {0, 0, 0.19}, {-0.31, 3.23, -1.00}, {-299.30, 190.60, -646.20}, {1.63, 0.76, 0.93}};
-void PeripheralIMUClass::setup(int sda, int scl) {
+void DeviceIMUClass::setup(int sda, int scl) {
 	Wire.begin(sda, scl);
 	Wire.setClock(115200);
 
@@ -25,4 +25,4 @@ void PeripheralIMUClass::setup(int sda, int scl) {
 		}
 	}
 }
-PeripheralIMUClass PeripheralIMU;
+DeviceIMUClass DeviceIMU;

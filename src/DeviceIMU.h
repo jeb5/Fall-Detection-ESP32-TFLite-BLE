@@ -1,16 +1,16 @@
-#ifndef PeripheralIMU_H
-#define PeripheralIMU_H
+#ifndef DeviceIMU_H
+#define DeviceIMU_H
 #include <Wire.h>
 
 #include "FastIMU.h"
 
 #define IMU_ADDRESS 0x68
 
-class PeripheralIMUClass {
+class DeviceIMUClass {
  public:
 	MPU9250 device;
 	void setup(int sda, int scl);
 };
 
-extern PeripheralIMUClass PeripheralIMU;
+extern DeviceIMUClass DeviceIMU;
 #endif

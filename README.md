@@ -18,7 +18,7 @@ This project implements a fall detection system using an ESP32 microcontroller e
 - Copy `model.cpp` to `src/` directory of the firmware project.
 
 ### Data Collection Server
-`python_src/data_collection_server.py`. Listens for live data streamed over Wifi from the peripheral device, and displays real-time plots. Saves received data to CSV file for use in training.
+`python_src/data_collection_server.py`. Listens for live data streamed over Wifi from the wearable device, and displays real-time plots. Saves received data to CSV file for use in training.
 <img src="images/data_collection_server.png" width="600" alt="Data Collection Server screenshot"/>
 
 ### Data Annotation Helper
@@ -27,5 +27,5 @@ This project implements a fall detection system using an ESP32 microcontroller e
 
 ## Other tools
 - To find the optimal parameters for the naive fall detection algorithm, use `python_src/experiments.py`. (Uses bayesian optimization to search parameter space.)
-- Fall detection server: `python_src/fall_detection_server.py`. Listens for Bluetooth Low Energy "Fallen" advertisements from the peripheral device, and flashes some very specific LEDs using the GPIO pins on my Raspberry Pi whenever a fall is detected. This could be extended to send push notifications to family members, or alert emergency services.
-- Fall detection peripheral code: `src/data_collection.cpp`. Periodically sends overlapping windows of IMU data to the data collection server over Wifi. This is unfortunately quite unreliable as packets are often lost. Requires "env.cpp" file with Wifi credentials.
+- Fall detection server: `python_src/fall_detection_server.py`. Listens for Bluetooth Low Energy "Fallen" advertisements from the wearable device, and flashes some very specific LEDs using the GPIO pins on my Raspberry Pi whenever a fall is detected. This could be extended to send push notifications to family members, or alert emergency services.
+- Fall detection ESP32 code: `src/data_collection.cpp`. Periodically sends overlapping windows of IMU data to the data collection server over Wifi. This is unfortunately quite unreliable as packets are often lost. Requires "env.cpp" file with Wifi credentials.
