@@ -19,10 +19,12 @@ This project implements a fall detection system using an ESP32 microcontroller e
 
 ### Data Collection Server
 `python_src/data_collection_server.py`. Listens for live data streamed over Wifi from the wearable device, and displays real-time plots. Saves received data to CSV file for use in training.
+
 <img src="images/data_collection_server.png" width="600" alt="Data Collection Server screenshot"/>
 
 ### Data Annotation Helper
 `python_src/annotate_data.py` Designed for manually annotating fall events in synchronized video and sensor data. Also displays custom metrics based on the data which was used to create the naive fall detection algorithm.
+
 <img src="images/data_annotation_helper.png" width="600" alt="Data Annotation Helper screenshot"/>
 
 ## Other tools
