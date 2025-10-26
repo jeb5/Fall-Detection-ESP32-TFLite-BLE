@@ -25,8 +25,8 @@
 #define CBC 4
 #define SBC 2
 
-#define FALL_CONFIRMATION_COUNTDOWN 300
-#define FALL_REPORTING_COUNTDOWN 800
+#define FALL_CONFIRMATION_COUNTDOWN 300	 // * 50 ms = 15 seconds
+#define FALL_REPORTING_COUNTDOWN 800		 // * 50 ms = 40 seconds
 
 #define LOGGING 0
 
